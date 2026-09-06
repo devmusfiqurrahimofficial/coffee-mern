@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@plugin "daisyui";
+/* Preline UI */
+@source "../node_modules/preline/dist/*.js";
+@import "../node_modules/preline/variants.css";
+body{
+  background-color: #EAE7DE!important;
+}
