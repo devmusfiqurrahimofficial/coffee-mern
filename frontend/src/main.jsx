@@ -1,14 +1,14 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { Provider } from 'react-redux'
 import './index.css'
 import App from './App.jsx'
-import ContexApi from './contexApi/ContexApi.jsx'
+import store from './redux/api/store.js'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ContexApi>
-      <App />
-    </ContexApi>
-    
+   <Provider store={store}>
+    <App />
+   </Provider>
   </StrictMode>,
 )

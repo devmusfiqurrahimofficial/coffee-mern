@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 const Login = () => {
        const provider = new GoogleAuthProvider();
        const [loading, setLoading] = useState(false);
+       const [message, setMessage] = useState({ type: '', text: '' });
        const navigate = useNavigate();
 // Google login (firebase authentication)
  const googleLogin = () => {
@@ -42,19 +43,20 @@ const Login = () => {
   const onSubmit = (data) =>{
     const auth = getAuth();
     const { email, password } = data;
-signInWithEmailAndPassword(auth, email, password)
-  .then((userCredential) => {
-    // Signed in 
-    const user = userCredential.user;
-    console.log("signed in", user);
-    navigate("/");
-    // ...
-  })
-  .catch((error) => {
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    console.log("sign in error", errorCode, errorMessage);
-  });
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        console.log("signed in", user);
+        setMessage({ type: 'success', text: 'Login successful!' });
+        navigate("/");
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log("sign in error", errorCode, errorMessage);
+        setMessage({ type: 'error', text: 'Invalid email or password.' });
+      });
   }
 
 
@@ -83,7 +85,11 @@ signInWithEmailAndPassword(auth, email, password)
           <input type="password" className="input" placeholder="Password" {...register("password")} />
           <div><a className="link link-hover">Forgot password?</a></div>
           <button type="submit" className="btn btn-neutral mt-4">Login</button>
-        
+          {message.text && (
+            <p className={message.type === 'success' ? 'text-green-500' : 'text-red-500'}>
+              {message.text}
+            </p>
+          )}
         </form>
           <p className="text-center my-5">Or</p>
           <button className="btn btn-warning mb-5" onClick={() => googleLogin()}>Login with Google</button>

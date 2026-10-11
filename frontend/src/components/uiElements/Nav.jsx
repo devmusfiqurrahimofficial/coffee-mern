@@ -3,13 +3,13 @@ import { MagnifyingGlassIcon, ShoppingCartIcon } from '@heroicons/react/24/solid
 
 import { Link} from 'react-router';
 import logo from '../../assets/image/logo.png';
-import { useContext, useState } from 'react';
-import { DataContext } from '../../contexApi/ContexApi';
+import {  useState } from 'react';
 import { signOut } from 'firebase/auth';
+import { useAuth } from '../../hooks/auth';
 import { auth } from '../../../firebase.config';
 
 const Nav = () => {
-  const {userData} = useContext(DataContext);
+  const { user, loading: authLoading } = useAuth();
   const[loading, setLoading] = useState(false);
 
   const logout = () => {
@@ -41,6 +41,7 @@ const Nav = () => {
              <li><Link to="/shop" className="text-black">Shop</Link></li>
              <li><Link to="/about" className="text-black">About</Link></li>
              <li><Link to="/contact" className="text-black">Contact</Link></li>
+             <li><Link to="/dashboard" className="text-black">Dashboard</Link></li>
            </ul>
          </div>
          <div className="navbar-center w-23 h-15">
@@ -48,9 +49,22 @@ const Nav = () => {
          </div>
          <div className="navbar-end flex gap-3 items-center text-black">
        
-          {userData?.uid ? (<Link onClick={()=>logout()} className="text-black">{userData.displayName}, Logout</Link>) : (  <Link to= "/auth/login" className="text-black"> Login / Sign up</Link>)}
-            
-          
+         {authLoading ? null : user ? (
+          <>
+            <img
+              src={user.photoURL }
+              alt="Profile"
+              className="w-10 h-10 rounded-full object-cover"
+            />
+            <button type="button" onClick={logout} className="text-black">
+              {user.displayName || 'User'}, Logout
+            </button>
+          </>
+          ) : (
+            <Link to="/auth/login" className="text-black">Login / Sign up</Link>
+          )}
+       
+
            <MagnifyingGlassIcon className="size-6" />
            <button type="button" className="relative">
              <ShoppingCartIcon className="size-6" />

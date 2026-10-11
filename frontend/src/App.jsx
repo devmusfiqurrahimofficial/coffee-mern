@@ -9,6 +9,8 @@ import FrontendLayout from './components/Layout/FrontendLayout'
 import DashboardLayout from './components/Layout/DashboardLayout'
 import Login from './pages/Auth/Login'
 import SingUp from './pages/Auth/SingUp'
+import { Dashboard } from './pages/Dashboard/Dashboard'
+import { PrivateRoute } from './PrivateRoute/PrivateRoute'
 function App() {
   return (
     <BrowserRouter >
@@ -22,8 +24,11 @@ function App() {
         <Route path="/auth/register" element={<SingUp />} />
      </Route>
 
-     <Route path="/dashboard" element={<DashboardLayout />}>
-       
+     <Route path="/dashboard" element={
+            <PrivateRoute children={<DashboardLayout/>}>
+            </PrivateRoute>}>
+
+        <Route index element={<Dashboard />} />
      </Route>
 
      <Route path="*" element={<div className='flex min-h-screen items-center justify-center p-5 text-black'>404 Not Found</div>} />

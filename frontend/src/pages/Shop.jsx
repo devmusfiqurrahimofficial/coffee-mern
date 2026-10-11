@@ -1,8 +1,7 @@
 import React, { useContext } from 'react';
-import { DataContext } from '../contexApi/ContexApi';
 
 const Shop = () => {
-  const { productData } = useContext(DataContext);
+
 
   const featuredProducts = productData?.slice(0, 6) || [];
 
