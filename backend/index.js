@@ -118,6 +118,11 @@ async function run() {
 
     console.log("MongoDB connected successfully!");
 
+    // Uptime/readiness check used by hosting providers (Render, Railway, …)
+    app.get("/health", (req, res) => {
+      res.send({ status: "ok", uptime: process.uptime() });
+    });
+
     app.get("/", (req, res) => {
       res.send("Server is running!");
     });

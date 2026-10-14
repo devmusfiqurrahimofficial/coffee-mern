@@ -1,0 +1,22 @@
+# Render (https://render.com) Blueprint for the Coffee Mern API.
+# Render reads this file from the repository root.
+services:
+  - type: web
+    name: coffee-mern-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      # Set these values in the Render dashboard when creating the service.
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: BASE_URL
+        sync: false
+      - key: NODE_VERSION
+        value: "22"
