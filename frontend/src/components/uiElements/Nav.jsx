@@ -4,13 +4,17 @@ import { MagnifyingGlassIcon, ShoppingCartIcon } from '@heroicons/react/24/solid
 import { Link} from 'react-router';
 import logo from '../../assets/image/logo.png';
 import {  useState } from 'react';
+import { useSelector } from 'react-redux';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '../../hooks/auth';
 import { auth } from '../../../firebase.config';
 
-const Nav = () => {
+const Nav = ({  setCartOpen }) => {
   const { user, loading: authLoading } = useAuth();
   const[loading, setLoading] = useState(false);
+
+  // Cart item count from the Redux store (drives the badge on the cart icon)
+  const { totalQuantity } = useSelector((state) => state.cart);
 
   const logout = () => {
     setLoading(true);
@@ -33,12 +37,13 @@ const Nav = () => {
   }
 
   return (
-    <div>
-      <div className="navbar flex justify-between bg-[#EAE7DE] px-4 py-2">
+    <>
+      <div className="navbar sticky top-0 z-50 flex justify-between bg-[#EAE7DE]/90 px-4 py-2 backdrop-blur-md">
         <div className="navbar-start hidden lg:flex">
            <ul className="menu menu-horizontal px-1 flex gap-4 items-center text-black">
              <li><Link to="/" className="text-black">Home</Link></li>
              <li><Link to="/shop" className="text-black">Shop</Link></li>
+             <li><Link to="/blog" className="text-black">Blog</Link></li>
              <li><Link to="/about" className="text-black">About</Link></li>
              <li><Link to="/contact" className="text-black">Contact</Link></li>
              <li><Link to="/dashboard" className="text-black">Dashboard</Link></li>
@@ -66,15 +71,24 @@ const Nav = () => {
        
 
            <MagnifyingGlassIcon className="size-6" />
-           <button type="button" className="relative">
-             <ShoppingCartIcon className="size-6" />
-           
-           </button>
+            <button
+              type="button"
+              className="relative"
+              onClick={() => setCartOpen(true)}
+              aria-label={`Cart, ${totalQuantity} items`}
+            >
+              <ShoppingCartIcon className="size-6" />
+              {totalQuantity > 0 && (
+                <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-[#e11d48] text-[10px] font-bold text-white">
+                  {totalQuantity}
+                </span>
+              )}
+            </button>
 
          
          </div>
        </div>
-     </div>
+    </>
  );
 };
 

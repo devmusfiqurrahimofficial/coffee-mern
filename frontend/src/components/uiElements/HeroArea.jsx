@@ -1,7 +1,8 @@
+import { Link } from "react-router"
 
 
 
-const HeroArea = ({p,title,description,buttonText,bg,accentText = false}) => {
+const HeroArea = ({p,title,path,description,buttonText,bg,accentText = false}) => {
   return (
      <section
       className="relative max-w-[1400px] mx-auto rounded-3xl overflow-hidden text-white min-h-[540px] flex items-center bg-cover bg-center bg-gradient-to-br from-[#1a2b23] via-[#241a1a] to-[#0d0d0d]"
@@ -31,10 +32,11 @@ const HeroArea = ({p,title,description,buttonText,bg,accentText = false}) => {
             {description}
           </p>
         )}
-
-        <button className="bg-[#e11d48] hover:bg-[#c81a40] mt-4 transition-colors text-white text-xs font-semibold tracking-widest uppercase px-6 py-3.5 rounded-md">
-          {buttonText}
-        </button>
+        <Link to={path}>
+          <button className="bg-[#e11d48] hover:bg-[#c81a40] mt-4 transition-colors text-white text-xs font-semibold tracking-widest uppercase px-6 py-3.5 rounded-md">
+            {buttonText}
+          </button>
+        </Link>
       </div>
     </section>
   )

@@ -1,11 +1,11 @@
 import Nav from "./uiElements/Nav"
 
 
-const Header = () => {
+const Header = ({ cartOpen, setCartOpen }) => {
   return (
-    <div>
-      <Nav />
-    </div>
+    <>
+      <Nav cartOpen={cartOpen} setCartOpen={setCartOpen} />
+    </>
   )
 }
 

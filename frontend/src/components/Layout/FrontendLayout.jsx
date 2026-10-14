@@ -3,10 +3,10 @@ import Header from "../Header"
 import Footer from "../Footer"
 
 
-const FrontendLayout = () => {
+const FrontendLayout = ({ cartOpen, setCartOpen }) => {
   return (
     <div>
-        <Header />
+        <Header cartOpen={cartOpen} setCartOpen={setCartOpen} />
         <main>
             <Outlet/>
         </main>

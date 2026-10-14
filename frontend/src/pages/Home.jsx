@@ -2,6 +2,7 @@ import HeroArea from "../components/uiElements/HeroArea"
 import bg from '../assets/image/hero-1.png'
 import bg2 from '../assets/image/hero-2.png'
 import CoffeeVerticals from "../components/uiElements/CoffeeVerticals"
+import FeaturedProducts from "../components/uiElements/FeaturedProducts"
 import ProductCategories from "../components/uiElements/ProductCategory/ProductCategories"
 import post1 from "../assets/image/instagram-1.png";
 import post2 from "../assets/image/instagram-2.png";
@@ -26,11 +27,12 @@ const instagramPosts = [
 ];
   return (
     <div>
-       <HeroArea p="Elevate your coffee experience" bg={bg}
+       <HeroArea p="Elevate your coffee experience" bg={bg}path="/shop"
         title="Taking in mind every step of the coffee journey"
         buttonText="Shop Now" />
+        <FeaturedProducts/>
         <CoffeeVerticals/>
-       <HeroArea p="About Caffeine Lab" bg={bg2}
+       <HeroArea p="About Caffeine Lab" bg={bg2}path="/blog"
         title="Taking in mind every step of the coffee journey"
         description="Caffeine Lab is a specialty coffee company based in Saudi Arabia that is passionate about providing exceptional and ethical coffee experiences.."
          accentText

@@ -6,9 +6,13 @@ export const productApi = createApi({
   reducerPath: 'pokemonApi',
   baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:5000/' }),
   endpoints: (build) => ({
-    getProduct: build.query(
+    getProducts: build.query(
       { query: () => "products"}
     ),
+    // Fetch a single product by its MongoDB _id
+    getProduct: build.query({
+      query: (id) => `products/${id}`,
+    }),
    //ADD NEW PRODUCT
 
   }),
@@ -16,4 +20,4 @@ export const productApi = createApi({
 
 // Export hooks for usage in function components, which are
 // auto-generated based on the defined endpoints
-export const { useGetProductsQuery } = productApi
+export const { useGetProductsQuery, useGetProductQuery } = productApi

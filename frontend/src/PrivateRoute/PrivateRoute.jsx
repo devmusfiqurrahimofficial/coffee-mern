@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/auth';
 export const PrivateRoute = ({ children }) => {
     const { user, loading } = useAuth();
     const location = useLocation();
-
+   
 if (loading) {
     return <div className="flex min-h-screen items-center justify-center p-5 text-black">Loading...</div>;
 }
