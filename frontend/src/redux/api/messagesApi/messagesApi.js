@@ -1,8 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { API_BASE_URL } from "../../../utils/apiConfig";
 
 export const messagesApi = createApi({
   reducerPath: "messagesApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "http://localhost:5000/" }),
+  baseQuery: fetchBaseQuery({ baseUrl: `${API_BASE_URL}/` }),
   tagTypes: ["Messages"],
   endpoints: (build) => ({
     // Public: submit a message from the contact page

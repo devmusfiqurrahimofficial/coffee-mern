@@ -1,8 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { API_BASE_URL } from "../../../utils/apiConfig";
 
 export const settingsApi = createApi({
   reducerPath: "settingsApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "http://localhost:5000/" }),
+  baseQuery: fetchBaseQuery({ baseUrl: `${API_BASE_URL}/` }),
   tagTypes: ["Settings"],
   endpoints: (build) => ({
     // Public store settings (store info + delivery prices)
