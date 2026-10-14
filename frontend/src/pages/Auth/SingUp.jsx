@@ -14,7 +14,6 @@ const nevigate = useNavigate();
       const {
     register,
     handleSubmit,
-    formState: { errors },
   } = useForm()
 
   const onSubmit = (data) =>{
@@ -77,7 +76,7 @@ if (loading) {
           <label className="label">Password</label>
           <input type="password" className="input" placeholder="Password" {...register("password")} />
        
-          <button type="submit" className="btn btn-neutral mt-4" onClick={() => createUser()}>Register</button>
+          <button type="submit" className="btn btn-neutral mt-4">Register</button>
         
         </form>
           <p className="text-center">Already have an account? <Link to="/auth/login" className="link link-hover">Login</Link></p>

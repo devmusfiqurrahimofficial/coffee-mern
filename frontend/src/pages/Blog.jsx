@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import heroImage from "../assets/image/hero-2.png";
+import { useAuth } from "../hooks/auth";
 import {
   useAddBlogMutation,
   useGetBlogsQuery,
@@ -192,12 +193,12 @@ export default function Blog() {
   });
   const [addBlog, { isLoading: isSubmitting }] = useAddBlogMutation();
   const [uploadBlogCover] = useUploadBlogCoverMutation();
+  const { user, loading: authLoading } = useAuth();
 
   const [form, setForm] = useState({
     title: "",
     category: "Community",
     story: "",
-    email: "",
   });
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState("");
@@ -254,9 +255,9 @@ export default function Blog() {
       setFormError("Please write your story before publishing.");
       return;
     }
-    const email = form.email.trim();
-    if (!email) {
-      setFormError("Please enter your email address.");
+    const email = user?.email?.trim();
+    if (!user || !email) {
+      setFormError("Please sign in to publish your story.");
       return;
     }
 
@@ -277,7 +278,7 @@ export default function Blog() {
         },
       }).unwrap();
 
-      setForm({ title: "", category: "Community", story: "", email });
+      setForm({ title: "", category: "Community", story: "" });
       setCoverFile(null);
       setCoverPreview("");
       const fileInput = document.getElementById("blog-cover-image");
@@ -415,29 +416,71 @@ export default function Blog() {
           </div>
 
           <p className="mt-10 text-center text-sm leading-6 text-[#4B5563]">
-            Share your story with the community. No account needed.
+            Share your story with the community.
           </p>
 
-          {/* The Form — Minimal, Underline Inputs */}
-          <form onSubmit={handleSubmit} className="mt-14 space-y-10">
-            {/* Email */}
-            <div>
-              <label htmlFor="blog-email" className="mb-3 block text-[10px] font-bold uppercase tracking-[0.24em] text-[#9CA3AF]">
-                Your email <span className="text-[#E85D3A]">*</span>
-              </label>
-              <input
-                id="blog-email"
-                type="email"
-                value={form.email}
-                onChange={updateField("email")}
-                required
-                disabled={isSubmitting}
-                placeholder="you@example.com"
-                className="w-full border-b border-[#1D1D1D]/15 bg-transparent pb-3 text-base text-[#1D1D1D] outline-none transition placeholder:text-[#9CA3AF] focus:border-[#E85D3A] disabled:cursor-not-allowed disabled:opacity-50"
-              />
+          {authLoading ? (
+            <div className="mt-14 rounded-3xl border border-dashed border-[#1D1D1D]/20 bg-white/60 px-6 py-16 text-center">
+              <p className="text-sm text-[#4B5563]">Checking your session…</p>
             </div>
+          ) : !user ? (
+            <div className="mt-14 rounded-3xl border border-dashed border-[#1D1D1D]/20 bg-white/60 px-6 py-16 text-center">
+              <span
+                className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[#E85D3A]/30 text-xl text-[#E85D3A]"
+                aria-hidden="true"
+              >
+                🔒
+              </span>
+              <h3 className="mt-5 font-serif text-2xl font-semibold text-[#1D1D1D]">
+                Sign in to share your story
+              </h3>
+              <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[#4B5563]">
+                You need an account to publish a story on Caffeine Lab. It only takes a moment — your email will be shown as the author.
+              </p>
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Link
+                  to="/auth/login"
+                  className="rounded-full bg-[#1D1D1D] px-8 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-white shadow-lg shadow-[#1D1D1D]/10 transition hover:bg-[#E85D3A] hover:shadow-[#E85D3A]/30"
+                >
+                  Login to continue
+                </Link>
+                <Link
+                  to="/auth/register"
+                  className="rounded-full border border-[#1D1D1D]/20 px-8 py-3.5 text-xs font-bold uppercase tracking-[0.2em] text-[#1D1D1D] transition hover:border-[#E85D3A] hover:text-[#E85D3A]"
+                >
+                  Create an account
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="mt-6 flex items-center justify-center gap-2 text-xs font-medium text-[#059669]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#10B981]" />
+                Signed in as {user.email}
+              </p>
+              <form onSubmit={handleSubmit} className="mt-10 space-y-10">
+              {/* Account email (from the logged-in account, not editable) */}
+              <div>
+                <label className="mb-3 block text-[10px] font-bold uppercase tracking-[0.24em] text-[#9CA3AF]">
+                  Posting as
+                </label>
+                <div className="flex items-center gap-3 border-b border-[#1D1D1D]/15 pb-3">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#1D1D1D] text-[11px] font-bold text-white">
+                    {initials(user.displayName || user.email || "")}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-[#1D1D1D]">
+                      {user.displayName || "Community member"}
+                    </p>
+                    <p className="truncate text-xs text-[#4B5563]">{user.email}</p>
+                  </div>
+                  <span className="ml-auto shrink-0 rounded-full bg-[#10B981]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#059669]">
+                    Signed in
+                  </span>
+                </div>
+              </div>
 
-            {/* Title */}
+              {/* Title */}
             <div>
               <label htmlFor="blog-title" className="mb-3 block text-[10px] font-bold uppercase tracking-[0.24em] text-[#9CA3AF]">
                 Your title <span className="text-[#E85D3A]">*</span>
@@ -545,17 +588,16 @@ export default function Blog() {
             <div className="flex flex-col items-center gap-4 pt-4">
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !user}
                 className="group inline-flex items-center gap-3 rounded-full bg-[#1D1D1D] px-10 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white shadow-lg shadow-[#1D1D1D]/10 transition-all duration-300 hover:bg-[#E85D3A] hover:shadow-[#E85D3A]/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
               >
                 {isSubmitting ? "Publishing…" : "Publish your story"}
                 {!isSubmitting && <span aria-hidden="true" className="transition-transform group-hover:translate-x-1">→</span>}
               </button>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-[#9CA3AF]">
-                Your email will be shown as author
-              </p>
             </div>
-          </form>
+            </form>
+          </>
+          )}
         </div>
       </section>
     </div>

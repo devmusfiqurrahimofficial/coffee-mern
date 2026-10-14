@@ -11,8 +11,13 @@ import { useDispatch } from "react-redux";
 import { addToCart } from "../redux/features/cartSlice/cartSlice";
 import { useGetProductQuery, useGetProductsQuery } from "../redux/api/productsApi/productsApi";
 import { useGetReviewsQuery, useAddReviewMutation } from "../redux/api/reviewsApi/reviewsApi";
+import WishlistButton from "../components/uiElements/WishlistButton";
 
-const currency = (value) => `$${Number(value || 0).toFixed(2)}`;
+const currency = (value) =>
+  `\u09f3${Number(value || 0).toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
 
 // Featured carousel settings
 const FEATURED_POOL = 8; // total featured products to pull from
@@ -116,7 +121,10 @@ const MiniProductCard = ({ product }) => (
           <>
             <StarIcon className="h-3.5 w-3.5 text-[#e11d48]" />
             <span className="text-xs font-medium text-neutral-500">
-              {product.rating}
+              {Number(product.rating).toFixed(1)}
+              {product.reviewCount > 0 && (
+                <span className="text-neutral-400"> ({product.reviewCount})</span>
+              )}
             </span>
           </>
         ) : null}
@@ -265,9 +273,12 @@ const ProductPage = () => {
   const [featuredStart, setFeaturedStart] = useState(0);
 
   // Reset the carousel back to the start whenever the product changes
-  useEffect(() => {
+  // (adjusting state during render, per React's recommended pattern)
+  const [previousProductId, setPreviousProductId] = useState(product?._id);
+  if (product?._id !== previousProductId) {
+    setPreviousProductId(product?._id);
     setFeaturedStart(0);
-  }, [product?._id]);
+  }
 
   // Toast state for "added to cart" feedback
   const [added, setAdded] = useState(false);
@@ -421,6 +432,7 @@ const ProductPage = () => {
                 <ShoppingCartIcon className="h-5 w-5" />
                 Add to Cart
               </button>
+              <WishlistButton product={product} className="!h-12 !w-12 border border-black/10 bg-white" />
               {added && (
                 <span className="flex items-center gap-1.5 text-sm font-medium text-green-600">
                   <CheckCircleIcon className="h-5 w-5" />
@@ -506,6 +518,24 @@ const ProductPage = () => {
                     <p className="mt-3 text-sm leading-relaxed text-neutral-600">
                       {review.comment}
                     </p>
+                  )}
+
+                  {Array.isArray(review.replies) && review.replies.length > 0 && (
+                    <ul className="mt-4 space-y-2.5 border-l-2 border-[#e11d48]/30 pl-4">
+                      {review.replies.map((item, index) => (
+                        <li key={`${item.createdAt || index}`}>
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-full bg-[#1d1d1d] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                              Admin
+                            </span>
+                            <span className="text-xs text-neutral-400">
+                              {new Date(item.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-sm text-neutral-600">{item.text}</p>
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </article>
               ))

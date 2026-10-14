@@ -18,7 +18,6 @@ export const blogsApi = createApi({
         ...(result?.blogs || []).map((blog) => ({ type: "Blogs", id: blog._id })),
       ],
     }),
-
     getBlog: build.query({
       query: (id) => ({ url: `blogs/${id}`, cache: "no-store" }),
       providesTags: (result, error, id) => [{ type: "Blogs", id }],
@@ -52,6 +51,31 @@ export const blogsApi = createApi({
       }),
       invalidatesTags: [{ type: "Blogs", id: "LIST" }, { type: "Blogs", id: "FEATURED" }],
     }),
+
+    // Update a blog post (admin dashboard)
+    updateBlog: build.mutation({
+      query: ({ id, ...patch }) => ({
+        url: `blogs/${id}`,
+        method: "PATCH",
+        body: patch,
+      }),
+      invalidatesTags: [
+        { type: "Blogs", id: "LIST" },
+        { type: "Blogs", id: "FEATURED" },
+      ],
+    }),
+
+    // Delete a blog post (admin dashboard)
+    deleteBlog: build.mutation({
+      query: (id) => ({
+        url: `blogs/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: [
+        { type: "Blogs", id: "LIST" },
+        { type: "Blogs", id: "FEATURED" },
+      ],
+    }),
   }),
 });
 
@@ -61,4 +85,6 @@ export const {
   useGetFeaturedBlogsQuery,
   useUploadBlogCoverMutation,
   useAddBlogMutation,
+  useUpdateBlogMutation,
+  useDeleteBlogMutation,
 } = blogsApi;

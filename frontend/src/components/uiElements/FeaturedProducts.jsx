@@ -1,8 +1,13 @@
 import { Link } from "react-router";
 import { StarIcon } from "@heroicons/react/24/solid";
 import { useGetProductsQuery } from "../../redux/api/productsApi/productsApi";
+import WishlistButton from "./WishlistButton";
 
-const currency = (value) => `$${Number(value || 0).toFixed(2)}`;
+const currency = (value) =>
+  `৳${Number(value || 0).toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
 
 // Single product card used in the home featured grid
 const FeaturedCard = ({ product }) => (
@@ -21,6 +26,7 @@ const FeaturedCard = ({ product }) => (
           {product.badge}
         </span>
       )}
+      <WishlistButton product={product} className="absolute right-3 top-3" />
     </div>
     <div className="flex flex-1 flex-col p-4">
       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-400">
@@ -34,7 +40,10 @@ const FeaturedCard = ({ product }) => (
           <>
             <StarIcon className="h-3.5 w-3.5 text-[#f2354d]" />
             <span className="text-xs font-medium text-neutral-500">
-              {product.rating}
+              {Number(product.rating).toFixed(1)}
+              {product.reviewCount > 0 && (
+                <span className="text-neutral-400"> ({product.reviewCount})</span>
+              )}
             </span>
           </>
         ) : null}
