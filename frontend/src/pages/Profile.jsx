@@ -698,7 +698,10 @@ const Profile = () => {
                 <div className="mt-4 flex flex-wrap gap-3">
                   <button
                     type="button"
-                    onClick={() => signOut(auth)}
+                    onClick={() => {
+                      signOut(auth);
+                      dispatch(clearWishlist());
+                    }}
                     className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-[#1d1d1d] transition hover:border-[#1d1d1d]"
                   >
                     <ArrowLeftOnRectangleIcon className="h-4 w-4" />

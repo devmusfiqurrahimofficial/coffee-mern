@@ -753,6 +753,26 @@ app.post("/jwt", (req, res) => {
       }
     });
 
+    // Delete a review (admin dashboard)
+    app.delete("/reviews/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).send({ error: "Invalid review id" });
+        }
+        const result = await reviewCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+        if (!result.deletedCount) {
+          return res.status(404).send({ error: "Review not found" });
+        }
+        res.send({ message: "Review deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting review:", error);
+        res.status(500).send({ error: "Failed to delete review" });
+      }
+    });
+
     // ----- Contact messages -----
 
     // Save a message from the contact page

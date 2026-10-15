@@ -117,17 +117,21 @@ const MiniProductCard = ({ product }) => (
         {product.name}
       </h3>
       <div className="mt-2 flex items-center gap-1">
-        {product.rating ? (
-          <>
-            <StarIcon className="h-3.5 w-3.5 text-[#e11d48]" />
-            <span className="text-xs font-medium text-neutral-500">
-              {Number(product.rating).toFixed(1)}
-              {product.reviewCount > 0 && (
-                <span className="text-neutral-400"> ({product.reviewCount})</span>
-              )}
+        <>
+          <StarIcon
+            className={`h-3.5 w-3.5 ${
+              product.reviewCount > 0 ? "text-[#e11d48]" : "text-neutral-300"
+            }`}
+          />
+          <span className="text-xs font-medium text-neutral-500">
+            {product.reviewCount > 0
+              ? Number(product.rating).toFixed(1)
+              : "—"}
+            <span className="text-neutral-400">
+              ({product.reviewCount || 0})
             </span>
-          </>
-        ) : null}
+          </span>
+        </>
       </div>
       <span className="mt-2 text-base font-bold text-[#1d1d1d]">
         {currency(product.price)}

@@ -17,6 +17,8 @@ import {
 } from "@heroicons/react/24/solid";
 import { useAuth } from "../../../hooks/auth";
 import { auth } from "../../../../firebase.config";
+import { useDispatch } from "react-redux";
+import { clearWishlist } from "../../../redux/features/wishlistSlice/wishlistSlice";
 import logo from "../../../assets/image/logo.png";
 import DashboardNavLink from "./DashboardNavLink";
 import { useGetMessagesQuery } from "../../../redux/api/messagesApi/messagesApi";
@@ -62,6 +64,7 @@ const NAV_SECTIONS = [
 
 export const Sidebar = ({ open, onClose }) => {
   const { user } = useAuth();
+  const dispatch = useDispatch();
   const { data: messages = [] } = useGetMessagesQuery();
 
   const badges = {
@@ -168,7 +171,10 @@ export const Sidebar = ({ open, onClose }) => {
           </NavLink>
           <button
             type="button"
-            onClick={() => signOut(auth)}
+            onClick={() => {
+              signOut(auth);
+              dispatch(clearWishlist());
+            }}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#e11d48] transition hover:bg-[#e11d48]/10"
           >
             <ArrowLeftOnRectangleIcon className="h-5 w-5" />

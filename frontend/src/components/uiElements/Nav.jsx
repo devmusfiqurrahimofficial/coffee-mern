@@ -10,8 +10,9 @@ import {
 import { Link, NavLink, useNavigate } from 'react-router';
 import logo from '../../assets/image/logo.png';
 import { useMemo, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { signOut } from 'firebase/auth';
+import { clearWishlist } from '../../redux/features/wishlistSlice/wishlistSlice';
 import { useAuth } from '../../hooks/auth';
 import { auth } from '../../../firebase.config';
 import { useGetProductsQuery } from '../../redux/api/productsApi/productsApi';
@@ -34,6 +35,7 @@ const Nav = ({  setCartOpen }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Cart item count from the Redux store (drives the badge on the cart icon)
+  const dispatch = useDispatch();
   const { totalQuantity } = useSelector((state) => state.cart);
 
   // Products power the live search suggestions in the navbar
@@ -71,6 +73,7 @@ const Nav = ({  setCartOpen }) => {
     setLoading(true);
     signOut(auth).then(() => {
       console.log('User signed out successfully');
+      dispatch(clearWishlist());
       setLoading(false);
     
   // Sign-out successful.

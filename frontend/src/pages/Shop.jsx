@@ -38,8 +38,8 @@ const Rating = ({ value, count }) => (
       />
     ))}
     <span className="ml-1 text-xs font-medium text-neutral-500">
-      {value ? Number(value).toFixed(1) : "—"}
-      {count > 0 && <span className="text-neutral-400"> ({count})</span>}
+      {count > 0 ? Number(value || 0).toFixed(1) : "—"}
+      <span className="text-neutral-400"> ({count || 0})</span>
     </span>
   </div>
 );

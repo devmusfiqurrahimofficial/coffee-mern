@@ -5,10 +5,12 @@ import {
   ExclamationCircleIcon,
   MagnifyingGlassIcon,
   StarIcon,
+  TrashIcon,
 } from "@heroicons/react/24/solid";
 import {
   useGetAllReviewsQuery,
   useAddReviewReplyMutation,
+  useDeleteReviewMutation,
 } from "../../../redux/api/reviewsApi/reviewsApi";
 import { useGetProductsQuery } from "../../../redux/api/productsApi/productsApi";
 import PageHeader from "./PageHeader";
@@ -37,6 +39,7 @@ const Stars = ({ value = 0 }) => (
 
 const ReviewCard = ({ review, productName }) => {
   const [addReviewReply, { isLoading }] = useAddReviewReplyMutation();
+  const [deleteReview, { isLoading: isDeleting }] = useDeleteReviewMutation();
   const [reply, setReply] = useState("");
   const [error, setError] = useState("");
   const replies = Array.isArray(review.replies) ? review.replies : [];
@@ -54,6 +57,19 @@ const ReviewCard = ({ review, productName }) => {
     } catch (err) {
       console.error("Failed to add reply:", err);
       setError(err?.data?.error || "Failed to add your reply.");
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(
+      `Delete review by "${review.name}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+    setError("");
+    try {
+      await deleteReview(review._id).unwrap();
+    } catch (err) {
+      setError(err?.data?.error || "Failed to delete review.");
     }
   };
 
@@ -79,6 +95,15 @@ const ReviewCard = ({ review, productName }) => {
               {productName}
             </Link>
           )}
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="flex items-center gap-1.5 rounded-full border border-[#e11d48]/30 bg-white px-3 py-1.5 text-xs font-semibold text-[#e11d48] transition hover:bg-[#e11d48] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <TrashIcon className="h-3.5 w-3.5" />
+            {isDeleting ? "Deleting…" : "Delete"}
+          </button>
         </div>
       </div>
 

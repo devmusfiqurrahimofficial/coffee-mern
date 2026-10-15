@@ -1,29 +1,41 @@
 import { HeartIcon } from "@heroicons/react/24/solid";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router";
 import {
   selectIsWishlisted,
   toggleWishlist,
 } from "../../redux/features/wishlistSlice/wishlistSlice";
+import { useAuth } from "../../hooks/auth";
 
 const WishlistButton = ({ product, className = "" }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const isWishlisted = useSelector(selectIsWishlisted(product._id || product.id));
+
+  const handleClick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (loading || !user) {
+      navigate("/auth/login");
+      return;
+    }
+
+    dispatch(
+      toggleWishlist({
+        id: product._id || product.id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+      })
+    );
+  };
 
   return (
     <button
       type="button"
-      onClick={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        dispatch(
-          toggleWishlist({
-            id: product._id || product.id,
-            name: product.name,
-            price: product.price,
-            image: product.image,
-          })
-        );
-      }}
+      onClick={handleClick}
       aria-label={
         isWishlisted
           ? `Remove ${product.name} from wishlist`

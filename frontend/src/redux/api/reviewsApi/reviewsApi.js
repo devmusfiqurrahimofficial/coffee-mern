@@ -44,6 +44,15 @@ export const reviewsApi = createApi({
       }),
       invalidatesTags: ["Reviews"],
     }),
+
+    // Delete a review (admin dashboard)
+    deleteReview: build.mutation({
+      query: (id) => ({
+        url: `reviews/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Reviews", "Products"],
+    }),
   }),
 });
 
@@ -52,4 +61,5 @@ export const {
   useGetReviewsQuery,
   useAddReviewMutation,
   useAddReviewReplyMutation,
+  useDeleteReviewMutation,
 } = reviewsApi;
