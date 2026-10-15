@@ -1,14 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { PlusCircleIcon } from "@heroicons/react/24/solid";
-import { useAddProductMutation } from "../../../redux/api/productsApi/productsApi";
+import {
+  useAddProductMutation,
+  useUploadProductImageMutation,
+} from "../../../redux/api/productsApi/productsApi";
 import PageHeader from "./PageHeader";
 import { bdtToUsd, formatBdt } from "../../../utils/currency";
 
 const CATEGORIES = ["Coffee", "Equipment", "Food", "Tea", "Accessories"];
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 export const AddProduct = () => {
   const [addProduct, { isLoading }] = useAddProductMutation();
+  const [uploadProductImage, { isLoading: isUploading }] =
+    useUploadProductImageMutation();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -17,14 +24,37 @@ export const AddProduct = () => {
     priceBdt: "",
     weight: "",
     badge: "",
-    image: "",
     description: "",
     rating: "",
   });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
   const [error, setError] = useState("");
 
   const updateField = (field) => (event) =>
     setForm((current) => ({ ...current, [field]: event.target.value }));
+
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    setError("");
+    if (!file) {
+      setImageFile(null);
+      setImagePreview("");
+      return;
+    }
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setError("Product images must be JPEG, PNG, WebP, or GIF files.");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      setError("Product images must be 5 MB or smaller.");
+      event.target.value = "";
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -46,13 +76,18 @@ export const AddProduct = () => {
       price: bdtToUsd(priceBdt),
       weight: form.weight.trim(),
       badge: form.badge.trim(),
-      image: form.image.trim(),
       description: form.description.trim(),
     };
     if (form.rating) product.rating = Number(form.rating);
 
     try {
-      await addProduct(product).unwrap();
+      // Upload the selected image first; the API stores it in MongoDB and
+      // returns a path like "products/<id>".
+      let image = "";
+      if (imageFile) {
+        ({ image } = await uploadProductImage({ file: imageFile }).unwrap());
+      }
+      await addProduct({ ...product, image }).unwrap();
       navigate("/dashboard/products");
     } catch (err) {
       console.error("Failed to add product:", err);
@@ -61,6 +96,7 @@ export const AddProduct = () => {
   };
 
   const priceBdtNumber = Number(form.priceBdt) || 0;
+  const isBusy = isLoading || isUploading;
 
   return (
     <div>
@@ -157,16 +193,23 @@ export const AddProduct = () => {
         <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
           <div>
             <label htmlFor="product-image" className="mb-1.5 block text-sm font-medium text-neutral-600">
-              Image URL
+              Product image (optional)
             </label>
-            <input
-              id="product-image"
-              type="text"
-              value={form.image}
-              onChange={updateField("image")}
-              placeholder="http://localhost:5000/images/coffee.jpg"
-              className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]"
-            />
+            <div className="flex items-center gap-4">
+              <div className="h-20 w-28 flex-shrink-0 overflow-hidden rounded-xl border border-dashed border-black/15 bg-[#f3efe7]">
+                {imagePreview && (
+                  <img src={imagePreview} alt="Product preview" className="h-full w-full object-cover" />
+                )}
+              </div>
+              <input
+                id="product-image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleImageChange}
+                disabled={isBusy}
+                className="block w-full text-sm text-neutral-500 file:mr-3 file:rounded-full file:border-0 file:bg-[#1d1d1d] file:px-4 file:py-2 file:text-xs file:font-semibold file:uppercase file:tracking-wider file:text-white hover:file:bg-[#e11d48]"
+              />
+            </div>
           </div>
           <div>
             <label htmlFor="product-rating" className="mb-1.5 block text-sm font-medium text-neutral-600">
@@ -215,11 +258,11 @@ export const AddProduct = () => {
           </button>
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isBusy}
             className="flex items-center justify-center gap-2 rounded-full bg-[#e11d48] px-7 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <PlusCircleIcon className="h-5 w-5" />
-            {isLoading ? "Adding…" : "Add Product"}
+            {isUploading ? "Uploading…" : isLoading ? "Adding…" : "Add Product"}
           </button>
         </div>
       </form>

@@ -1,9 +1,14 @@
 import { useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/solid";
-import { useUpdateProductMutation } from "../../../redux/api/productsApi/productsApi";
+import {
+  useUpdateProductMutation,
+  useUploadProductImageMutation,
+} from "../../../redux/api/productsApi/productsApi";
 import { bdtToUsd, formatBdt } from "../../../utils/currency";
 
 const CATEGORIES = ["Coffee", "Equipment", "Food", "Tea", "Accessories"];
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 const initialForm = (product) =>
   product
@@ -30,12 +35,40 @@ const initialForm = (product) =>
 
 const EditProductModal = ({ product, onClose, onSaved }) => {
   const [updateProduct, { isLoading }] = useUpdateProductMutation();
+  const [uploadProductImage, { isLoading: isUploading }] =
+    useUploadProductImageMutation();
 
   const [form, setForm] = useState(() => initialForm(product));
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
   const [error, setError] = useState("");
 
   const updateField = (field) => (event) =>
     setForm((current) => ({ ...current, [field]: event.target.value }));
+
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    setError("");
+    if (!file) {
+      setImageFile(null);
+      setImagePreview("");
+      return;
+    }
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setError("Product images must be JPEG, PNG, WebP, or GIF files.");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      setError("Product images must be 5 MB or smaller.");
+      event.target.value = "";
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const isBusy = isLoading || isUploading;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -52,6 +85,12 @@ const EditProductModal = ({ product, onClose, onSaved }) => {
     }
 
     try {
+      // Upload a replacement image if one was chosen; otherwise keep the
+      // product's current image untouched.
+      let image = form.image.trim();
+      if (imageFile) {
+        ({ image } = await uploadProductImage({ file: imageFile }).unwrap());
+      }
       await updateProduct({
         id: product._id,
         name: form.name.trim(),
@@ -59,7 +98,7 @@ const EditProductModal = ({ product, onClose, onSaved }) => {
         price: bdtToUsd(priceBdt),
         weight: form.weight.trim(),
         badge: form.badge.trim(),
-        image: form.image.trim(),
+        image,
         description: form.description.trim(),
         rating: form.rating ? Number(form.rating) : undefined,
       }).unwrap();
@@ -180,16 +219,27 @@ const EditProductModal = ({ product, onClose, onSaved }) => {
           <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
             <div>
               <label htmlFor="edit-image" className="mb-1.5 block text-sm font-medium text-neutral-600">
-                Image URL
+                Product image
               </label>
-              <input
-                id="edit-image"
-                type="text"
-                value={form.image}
-                onChange={updateField("image")}
-                placeholder="https://…"
-                className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition focus:border-[#e11d48]"
-              />
+              <div className="flex items-center gap-3">
+                <div className="h-16 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-dashed border-black/15 bg-[#f3efe7]">
+                  {(imagePreview || product.image) && (
+                    <img
+                      src={imagePreview || product.image}
+                      alt="Product"
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                </div>
+                <input
+                  id="edit-image"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleImageChange}
+                  disabled={isBusy}
+                  className="block w-full text-sm text-neutral-500 file:mr-3 file:rounded-full file:border-0 file:bg-[#1d1d1d] file:px-4 file:py-2 file:text-xs file:font-semibold file:uppercase file:tracking-wider file:text-white hover:file:bg-[#e11d48]"
+                />
+              </div>
             </div>
             <div>
               <label htmlFor="edit-rating" className="mb-1.5 block text-sm font-medium text-neutral-600">
@@ -237,10 +287,10 @@ const EditProductModal = ({ product, onClose, onSaved }) => {
             </button>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isBusy}
               className="rounded-full bg-[#e11d48] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isLoading ? "Saving…" : "Save Changes"}
+              {isUploading ? "Uploading…" : isLoading ? "Saving…" : "Save Changes"}
             </button>
           </div>
         </form>

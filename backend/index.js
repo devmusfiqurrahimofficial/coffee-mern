@@ -103,6 +103,7 @@ async function run() {
     const reviewCollection = db.collection("reviews");
     const blogCollection = db.collection("blogs");
     const blogCoverCollection = db.collection("blogCovers");
+    const productImageCollection = db.collection("productImages");
     const userCollection = db.collection("user");
     const orderCollection = db.collection("orders");
     const settingsCollection = db.collection("settings");
@@ -140,6 +141,22 @@ async function run() {
       }
     });
 
+    // Product images uploaded through the dashboard are stored in MongoDB
+    app.get("/images/products/:id", async (req, res) => {
+      try {
+        const image = await productImageCollection.findOne({ _id: req.params.id });
+        if (!image) {
+          return res.status(404).send({ error: "Image not found" });
+        }
+        res.set("Content-Type", image.contentType || "application/octet-stream");
+        res.set("Cache-Control", "public, max-age=31536000, immutable");
+        res.send(image.data?.buffer || image.data);
+      } catch (error) {
+        console.error("Error serving product image:", error);
+        res.status(500).send({ error: "Failed to load image" });
+      }
+    });
+
     app.get("/", (req, res) => {
       res.send("Server is running!");
     });
@@ -163,6 +180,50 @@ app.post("/jwt", (req, res) => {
     res.status(500).send({ error: "Failed to generate token" });
   }
 });
+    // Direct image upload for products (stored in MongoDB so it works on
+    // hosts with a read-only or ephemeral filesystem, e.g. Render free tier)
+    app.post(
+      "/products/image",
+      express.raw({ type: "image/*", limit: "5mb" }),
+      async (req, res) => {
+        const contentType = (req.get("content-type") || "")
+          .split(";")[0]
+          .toLowerCase();
+        const fileExtensions = {
+          "image/jpeg": "jpg",
+          "image/png": "png",
+          "image/webp": "webp",
+          "image/gif": "gif",
+        };
+        const extension = fileExtensions[contentType];
+
+        if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+          return res.status(400).send({ error: "An image file is required." });
+        }
+        if (!extension) {
+          return res.status(415).send({
+            error: "Product images must be JPEG, PNG, WebP, or GIF files.",
+          });
+        }
+
+        const imageId = randomUUID();
+        const image = `products/${imageId}`;
+
+        try {
+          await productImageCollection.insertOne({
+            _id: imageId,
+            data: req.body,
+            contentType,
+            createdAt: new Date(),
+          });
+          return res.status(201).send({ image });
+        } catch (error) {
+          console.error("Error saving product image:", error);
+          return res.status(500).send({ error: "Unable to save the image." });
+        }
+      }
+    );
+
     app.post("/products", async (req, res) => {
       try {
         const product = req.body;

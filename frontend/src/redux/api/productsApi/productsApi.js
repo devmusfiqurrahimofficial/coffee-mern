@@ -30,6 +30,18 @@ export const productApi = createApi({
       }),
       invalidatesTags: ["Products"],
     }),
+    // Upload a product image; the API stores it in MongoDB and returns
+    // { image: "products/<id>" }
+    uploadProductImage: build.mutation({
+      query: ({ file }) => ({
+        url: "products/image",
+        method: "POST",
+        body: file,
+        headers: {
+          "Content-Type": file.type,
+        },
+      }),
+    }),
     // Update an existing product
     updateProduct: build.mutation({
       query: ({ id, ...patch }) => ({
@@ -56,6 +68,7 @@ export const {
   useGetProductsQuery,
   useGetProductQuery,
   useAddProductMutation,
+  useUploadProductImageMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
 } = productApi
