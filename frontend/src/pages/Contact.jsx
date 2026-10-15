@@ -20,6 +20,7 @@ const initials = (name = "") =>
     .join("")
     .slice(0, 2)
     .toUpperCase() || "U";
+    
 
 const FeedbackCard = ({ item }) => {
   const replies = Array.isArray(item.replies) ? item.replies : [];
@@ -142,15 +143,15 @@ const Contact = () => {
           <div className="mt-8 space-y-4">
             <div>
               <h3 className="font-semibold">Visit Us</h3>
-              <p className="text-slate-600">123 Coffee Street, Downtown</p>
+              <p className="text-slate-600">Banasree,Dhaka-1219</p>
             </div>
             <div>
               <h3 className="font-semibold">Call Us</h3>
-              <p className="text-slate-600">+1 (555) 012-3456</p>
+              <p className="text-slate-600">+8801632911828</p>
             </div>
             <div>
               <h3 className="font-semibold">Email</h3>
-              <p className="text-slate-600">hello@coffeebloom.com</p>
+              <p className="text-slate-600">devmusfiqurrahimofficial@gmail.com</p>
             </div>
           </div>
         </section>
