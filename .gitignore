@@ -1,0 +1,12 @@
+node_modules
+
+# Secrets — never commit
+.env
+.env.local
+.env.*.local
+
+# Tooling / build artifacts
+.kilo/
+.netlify/
+dist/
+
