@@ -102,6 +102,7 @@ async function run() {
     const productCollection = db.collection("products");
     const reviewCollection = db.collection("reviews");
     const blogCollection = db.collection("blogs");
+    const blogCoverCollection = db.collection("blogCovers");
     const userCollection = db.collection("user");
     const orderCollection = db.collection("orders");
     const settingsCollection = db.collection("settings");
@@ -121,6 +122,22 @@ async function run() {
     // Uptime/readiness check used by hosting providers (Render, Railway, …)
     app.get("/health", (req, res) => {
       res.send({ status: "ok", uptime: process.uptime() });
+    });
+
+    // Blog covers uploaded through the dashboard are stored in MongoDB
+    app.get("/images/blog-covers/:id", async (req, res) => {
+      try {
+        const cover = await blogCoverCollection.findOne({ _id: req.params.id });
+        if (!cover) {
+          return res.status(404).send({ error: "Image not found" });
+        }
+        res.set("Content-Type", cover.contentType || "application/octet-stream");
+        res.set("Cache-Control", "public, max-age=31536000, immutable");
+        res.send(cover.data?.buffer || cover.data);
+      } catch (error) {
+        console.error("Error serving blog cover:", error);
+        res.status(500).send({ error: "Failed to load image" });
+      }
     });
 
     app.get("/", (req, res) => {
@@ -966,12 +983,18 @@ app.post("/jwt", (req, res) => {
           });
         }
 
-        const image = `blog-covers/${randomUUID()}.${extension}`;
-        const imageDirectory = path.join(__dirname, "images", "blog-covers");
+        // Covers are stored in MongoDB so the API also runs on hosts with a
+        // read-only filesystem (Netlify Functions, for example).
+        const coverId = randomUUID();
+        const image = `blog-covers/${coverId}`;
 
         try {
-          await fs.mkdir(imageDirectory, { recursive: true });
-          await fs.writeFile(path.join(imageDirectory, path.basename(image)), req.body);
+          await blogCoverCollection.insertOne({
+            _id: coverId,
+            data: req.body,
+            contentType,
+            createdAt: new Date(),
+          });
           return res.status(201).send({ image });
         } catch (error) {
           console.error("Error saving blog cover:", error);
@@ -1024,7 +1047,37 @@ app.post("/jwt", (req, res) => {
     });
   } catch (error) {
     console.error("MongoDB connection failed:", error);
+    throw error;
   }
+
+  return app;
 }
 
-run();
+// The app is initialised once and cached, so it works both as a normal
+// server (npm start) and as a Netlify Function (see netlify/functions/api.js).
+let initializedApp;
+
+const getApp = async () => {
+  if (!initializedApp) {
+    initializedApp = run().catch((error) => {
+      initializedApp = null;
+      throw error;
+    });
+  }
+  return initializedApp;
+};
+
+if (require.main === module) {
+  getApp()
+    .then((application) => {
+      application.listen(port, () => {
+        console.log(`Server running on port ${port}`);
+      });
+    })
+    .catch((error) => {
+      console.error("Server failed to start:", error);
+      process.exit(1);
+    });
+}
+
+module.exports = { getApp };
