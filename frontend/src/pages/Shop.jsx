@@ -48,28 +48,31 @@ const Rating = ({ value, count }) => (
 // Product card
 
 const ProductCard = ({ product, onAdd }) => (
-  <article className="group flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+  <article className="group flex flex-col overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-black/10">
     <div className="relative aspect-[4/5] overflow-hidden bg-[#f3efe7]">
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300" />
       <Link to={`/product/${product.id}`} aria-label={product.name}>
         <img
           src={product.image}
           alt={product.name}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
       </Link>
       {product.badge && (
-        <span className="absolute left-3 top-3 rounded-full bg-[#e11d48] px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow">
+        <span className="absolute left-3 top-3 rounded-full bg-[#e11d48] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md">
           {product.badge}
         </span>
       )}
-      <WishlistButton product={product} className="absolute right-3 top-3" />
+      <div className="absolute right-3 top-3 flex gap-2">
+        <WishlistButton product={product} className="h-9 w-9 grid place-items-center rounded-full bg-white/90 backdrop-blur-sm border border-white/50 text-[#1d1d1d] transition-all hover:bg-[#e11d48] hover:text-white" />
+      </div>
     </div>
 
     <div className="flex flex-1 flex-col p-5">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-400">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-neutral-400">
         {product.category}
       </p>
-      <h3 className="mt-1 font-serif text-lg font-bold leading-tight text-[#1d1d1d]">
+      <h3 className="mt-1.5 font-serif text-base font-bold leading-tight text-[#1d1d1d] transition group-hover:text-[#e11d48]">
         <Link to={`/product/${product.id}`} className="transition hover:text-[#e11d48]">
           {product.name}
         </Link>
@@ -87,7 +90,7 @@ const ProductCard = ({ product, onAdd }) => (
         <button
           type="button"
           onClick={() => onAdd(product)}
-          className="flex items-center gap-1.5 rounded-full bg-[#1d1d1d] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#e11d48]"
+          className="btn-primary text-xs px-6 py-2.5"
         >
           <ShoppingCartIcon className="h-4 w-4" />
           Add

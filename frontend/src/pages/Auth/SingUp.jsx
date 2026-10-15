@@ -5,50 +5,50 @@ import { Link, useNavigate } from 'react-router'
 import { auth } from '../../../firebase.config';
 import { useState } from 'react';
 
-const SingUp = () => {
-    const[loading, setLoading] = useState(false);
-    // create user with firebaser
-const nevigate = useNavigate();
+const getErrorText = (error) => {
+  const firebaseErrorMap = {
+    "auth/email-already-exists": "An account with this email already exists. Please log in instead.",
+    "auth/invalid-email": "Please enter a valid email address.",
+    "auth/weak-password": "Password should be at least 6 characters.",
+    "auth/network-request-failed": "Network error. Please check your connection.",
+    "auth/operation-not-allowed": "Email/password accounts are not enabled. Contact support.",
+  };
+  if (error?.code && firebaseErrorMap[error.code]) {
+    return firebaseErrorMap[error.code];
+  }
+  return error?.message || "Something went wrong.";
+};
 
-    // react hook form
-      const {
+const SingUp = () => {
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState({ type: "", text: "" });
+    const navigate = useNavigate();
+
+    const {
     register,
     handleSubmit,
   } = useForm()
 
-  const onSubmit = (data) =>{
-     const{name, email, password } = data;
+  const onSubmit = (data) => {
+     const { name, email, password } = data;
     setLoading(true);
-  createUserWithEmailAndPassword(auth, email, password)
+    setMessage({ type: "", text: "" });
+    createUserWithEmailAndPassword(auth, email, password)
     .then((userCredential) => {
-      // Signed in 
       const user = userCredential.user;
-      console.log(user);
-  
-  if(user && user.uid){
-        updateProfile(auth.currentUser, {
-  displayName: name
-}).then(() => {
-  // Profile updated!
-  // ...
-}).catch((error) => {
-  // An error occurred
-  console.log(error);
-  // ...
-});
-  }
-    setLoading(false);
-    nevigate("/");
-
-       
-      // ...
+      if (user && user.uid) {
+        return updateProfile(auth.currentUser, { displayName: name });
+      }
+    })
+    .then(() => {
+      setMessage({ type: "success", text: "Account created successfully!" });
+      setLoading(false);
+      navigate("/");
     })
     .catch((error) => {
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      console.log(errorCode, errorMessage);
+      console.error("Sign up error:", error);
+      setMessage({ type: "error", text: getErrorText(error) });
       setLoading(false);
-      // ..
     });
   }
 
@@ -65,20 +65,29 @@ if (loading) {
   <div className="hero-content flex-col ">
      <div className="card-title text-center text-4xl text-black font-bold mt-10">Register Now!</div>
     <div className="card bg-base-100 w-[500px] max-w-sm shrink-0 shadow-2xl">
-       
+      
       <div className="card-body">
         <form className="fieldset" onSubmit={handleSubmit(onSubmit)}>
              <label className="label">Name</label>
           <input type="text" className="input" placeholder="Name" {...register("name")} />
-            
+           
           <label className="label">Email</label>
           <input type="email" className="input" placeholder="Email" {...register("email")} />
           <label className="label">Password</label>
           <input type="password" className="input" placeholder="Password" {...register("password")} />
-       
+    
           <button type="submit" className="btn btn-neutral mt-4">Register</button>
-        
+      
         </form>
+          {message.text && (
+            <p
+              className={
+                message.type === "success" ? "text-green-500" : "text-red-500"
+              }
+            >
+              {message.text}
+            </p>
+          )}
           <p className="text-center">Already have an account? <Link to="/auth/login" className="link link-hover">Login</Link></p>
       </div>
     </div>

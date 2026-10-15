@@ -9,77 +9,65 @@ export default function CoffeeVerticals() {
     {
       title: "COFFEE ROASTER",
       image: vertical1,
-      className: "md:row-span-2 min-h-[490px]",
+      className: "md:row-span-2 min-h-[520px]",
     },
     {
       title: "CAFE",
       image: vertical2,
-      className: "min-h-[235px]",
+      className: "min-h-[260px]",
     },
     {
       title: "RETAIL",
       image: vertical3,
-      className: "min-h-[235px]",
+      className: "min-h-[260px]",
     },
   ];
 
   return (
-    <section className=" px-4 py-12 md:px-10 max-w-[1400px] mx-auto md:py-16">
+    <section className="px-4 py-12 md:px-10 max-w-[1400px] mx-auto md:py-20">
       <div className="mx-auto max-w-6xl">
-      
-        <div className="mb-5 text-center">
-          <p className="mb-1 text-xs font-bold tracking-[0.25em] text-[#ff6375]">
-            OUR VERTICALS
+        <div className="mb-12 text-center">
+          <p className="mb-1 text-[9px] font-bold tracking-[0.25em] uppercase text-[#f2354d]">
+            Our verticals
           </p>
-
-          <h2 className="font-serif text-4xl font-black leading-[1.05] text-[#1d1d1d] md:text-6xl">
+          <h2 className="font-serif text-3xl font-black leading-[1.05] text-[#1d1d1d] md:text-6xl">
             Taking in mind every step of
             <br />
-            the <span className="text-[#f2354d]">coffee journey</span>
+            the <span className="text-[#e11d48]">coffee journey</span>
           </h2>
-
-          <div className="mt-7 flex items-center justify-center gap-3 text-[#78972a]">
-            <img src={leaf} alt="" className="w-27" />
-          </div>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 md:grid-rows-2">
+        <div className="grid gap-6 md:grid-cols-2 md:grid-rows-2">
           {cards.map((card) => (
             <article
               key={card.title}
-              className={`group relative overflow-hidden rounded-[26px] ${card.className}`}
+              className={`group relative overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-black/10 ${card.className}`}
             >
               <img
                 src={card.image}
                 alt={card.title}
-                className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
-
-              <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-7 md:p-8">
+              <div className="absolute inset-x-0 bottom-0 z-10 p-6 md:p-8 flex items-end justify-between">
                 <div className="text-white">
-                  <h3 className="font-serif text-2xl font-black md:text-3xl">
+                  <h3 className="font-serif text-2xl font-black leading-tight md:text-3xl">
                     {card.title}
                   </h3>
-                  <p className="mt-1 text-[10px] font-bold tracking-[0.27em] md:text-xs">
-                    ELEVATE YOUR COFFEE EXPERIENCE
+                  <p className="mt-2 text-xs font-medium text-white/70 max-w-xs">
+                    Elevate your coffee experience
                   </p>
                 </div>
-
                 <button
                   aria-label={`Explore ${card.title}`}
-                  className="grid h-10 w-10 place-items-center rounded-full border border-white/70 text-xl text-white transition hover:bg-white hover:text-black"
+                  className="grid h-10 w-10 place-items-center rounded-full bg-[#e11d48] text-white transition-all duration-300 hover:bg-[#c81a40] hover:shadow-lg hover:shadow-[#e11d48]/40 active:scale-95"
                 >
                   ›
                 </button>
               </div>
             </article>
           ))}
-        </div>
-
-        <div className="mt-7 flex items-center justify-center gap-3 text-[#78972a]">
-          <img src={leaf} alt="" className=" w-27"  />
         </div>
       </div>
     </section>

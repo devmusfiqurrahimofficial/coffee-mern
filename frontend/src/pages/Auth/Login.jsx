@@ -17,6 +17,20 @@ const getErrorText = (error) => {
   if (error?.status) {
     return `Server error ${error.status}: ${error.data?.error || "unknown error"}`;
   }
+
+  // Map common Firebase auth error codes to user-friendly messages
+  const firebaseErrorMap = {
+    "auth/invalid-credential": "Invalid email or password. Please try again.",
+    "auth/user-not-found": "No account found with this email address.",
+    "auth/wrong-password": "Incorrect password. Please try again.",
+    "auth/invalid-email": "Please enter a valid email address.",
+    "auth/too-many-requests": "Too many failed attempts. Please try again later.",
+    "auth/network-request-failed": "Network error. Please check your connection.",
+  };
+
+  if (error?.code && firebaseErrorMap[error.code]) {
+    return firebaseErrorMap[error.code];
+  }
   return error?.code || error?.message || "Something went wrong.";
 };
 
