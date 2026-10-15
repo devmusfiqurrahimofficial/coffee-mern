@@ -244,6 +244,7 @@ const CheckoutPage = () => {
     state: "",
     zip: "",
     country: "United States",
+    detailAddress: "",
   });
   const [deliveryMethod, setDeliveryMethod] = useState("standard");
   const [paymentMethod, setPaymentMethod] = useState("card");
@@ -297,6 +298,9 @@ const CheckoutPage = () => {
       nextErrors.phone = "Enter a valid phone number";
     }
     if (!address.street.trim()) nextErrors.street = "Street address is required";
+    if (!address.detailAddress.trim()) {
+      nextErrors.detailAddress = "Detailed address is required";
+    }
     if (!address.city.trim()) nextErrors.city = "City is required";
     if (deliveryMethod !== "pickup" && !address.zip.trim()) {
       nextErrors.zip = "ZIP / Postal code is required";
@@ -381,6 +385,7 @@ const CheckoutPage = () => {
       },
       address: {
         street: address.street.trim(),
+        detailAddress: address.detailAddress.trim(),
         city: address.city.trim(),
         state: address.state.trim(),
         zip: address.zip.trim(),
@@ -600,14 +605,26 @@ const CheckoutPage = () => {
                     <Field label="Country" error={errors.country}>
                       <input
                         type="text"
-                        value={address.country}
+                        value="Bangladesh"
                         onChange={(e) =>
                           setAddress({ ...address, country: e.target.value })
                         }
-                        placeholder="United States"
+                        placeholder="Bangladesh"
                         className={inputClass}
                       />
                     </Field>
+                     <Field label="Details Address" icon={MapPinIcon} error={errors.detailAddress}>
+                        <input
+                          type="text"
+                          value={address.detailAddress}
+                          onChange={(e) =>
+                            setAddress({ ...address, detailAddress: e.target.value })
+                          }
+                          placeholder="Flat/House No, Road No, Area, Block, etc."
+                          className={inputClass}
+                        />
+                      </Field>
+                   
                   </div>
                 </section>
 

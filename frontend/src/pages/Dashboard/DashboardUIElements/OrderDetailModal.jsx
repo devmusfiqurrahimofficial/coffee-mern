@@ -115,6 +115,9 @@ const OrderDetailModal = ({ order, onClose }) => {
                 {address.street}, {address.city}
                 {address.state ? `, ${address.state}` : ""} {address.zip}
               </p>
+              {address.detailAddress && (
+                <p className="mt-0.5 text-sm text-neutral-600">{address.detailAddress}</p>
+              )}
               <p className="text-sm text-neutral-600">{address.country}</p>
             </div>
           </div>

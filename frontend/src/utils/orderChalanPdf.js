@@ -134,6 +134,7 @@ export function downloadOrderChalan(order) {
     safeText(customer.phone || ""),
     safeText(customer.email || ""),
     safeText(address.street || ""),
+    safeText(address.detailAddress || ""),
     [
       safeText(address.city || ""),
       safeText(address.state || ""),

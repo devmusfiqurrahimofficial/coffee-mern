@@ -600,6 +600,7 @@ app.post("/jwt", (req, res) => {
         },
         address: {
           street: String(address.street).trim(),
+          detailAddress: String(address.detailAddress || "").trim(),
           city: String(address.city).trim(),
           state: String(address.state || "").trim(),
           zip: String(address.zip).trim(),
