@@ -84,6 +84,13 @@ const ChatBot = () => {
     skip: !chatSessionId,
   });
 
+  // Refetch messages whenever the chat session is set/restored (e.g. after page refresh)
+  useEffect(() => {
+    if (chatSessionId) {
+      refetchMessages();
+    }
+  }, [chatSessionId, refetchMessages]);
+
   useEffect(() => {
     if (!historyData || !Array.isArray(historyData)) return;
     dispatch(
@@ -178,10 +185,14 @@ const ChatBot = () => {
     };
 
     const init = async () => {
-      const sessionId = await createChatSession();
-      if (!sessionId) return;
+      // Use saved session from localStorage first to preserve history on refresh
+      let sessionId = savedSessionId;
+      if (!sessionId) {
+        sessionId = await createChatSession();
+        if (!sessionId) return;
+        localStorage.setItem("chatSessionId", sessionId);
+      }
       dispatch(setChatSessionId(sessionId));
-      localStorage.setItem("chatSessionId", sessionId);
 
       const socket = io(SOCKET_URL, {
         auth: { token },
@@ -191,6 +202,7 @@ const ChatBot = () => {
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         timeout: 20000,
+        forceNew: false,
       });
       socketRef.current = socket;
 
