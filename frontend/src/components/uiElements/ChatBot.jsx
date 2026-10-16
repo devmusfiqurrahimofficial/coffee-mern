@@ -72,7 +72,7 @@ const ChatBot = () => {
     };
   }, [open]);
 
-  const { data: historyData } = useGetMessagesQuery(chatSessionId, {
+  const { data: historyData, refetch: refetchMessages } = useGetMessagesQuery(chatSessionId, {
     skip: !chatSessionId,
   });
 
@@ -176,6 +176,11 @@ const ChatBot = () => {
       const socket = io(SOCKET_URL, {
         auth: { token },
         transports: ["websocket", "polling"],
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
       });
       socketRef.current = socket;
 
@@ -186,12 +191,28 @@ const ChatBot = () => {
         }
       });
 
-      socket.on("disconnect", () => {
-        console.log("Socket disconnected");
+      socket.on("reconnect", (attemptNumber) => {
+        console.log("Socket reconnected, attempt:", attemptNumber);
+        if (sessionId) {
+          socket.emit("join:customer", { sessionId });
+        }
       });
 
-      socket.on("connect_error", (err) => {
-        console.error("Socket connect error:", err.message);
+      socket.on("reconnect_error", (err) => {
+        console.error("Socket reconnect error:", err.message);
+      });
+
+      socket.on("reconnect_failed", () => {
+        console.error("Socket reconnection failed");
+        dispatch(setSendError("Connection lost. Please refresh the page."));
+      });
+
+      socket.on("disconnect", (reason) => {
+        console.log("Socket disconnected:", reason);
+        if (reason === "io server disconnect") {
+          // Server initiated disconnect — will attempt reconnect
+          socket.connect();
+        }
       });
 
       socket.on("admin:online", () => {
@@ -217,11 +238,19 @@ const ChatBot = () => {
       });
 
       socket.on("chat:message", (msg) => {
-        if (msg.sessionId !== chatSessionIdRef.current) return;
+        if (!msg) return;
+        // Normalize sessionId comparison (server may send ObjectId string, frontend stores hex)
+        const msgSessionId = String(msg.sessionId || "");
+        const currentSessionId = String(chatSessionIdRef.current || "");
+        if (msgSessionId !== currentSessionId) return;
         if (msg.sender === "customer") {
           dispatch(addMessage(msg));
         } else if (msg.sender === "admin") {
           dispatch(addAdminMessage(msg));
+        }
+        // Fallback: refetch from API so missed socket messages always recover
+        if (chatSessionId) {
+          refetchMessages();
         }
       });
 
