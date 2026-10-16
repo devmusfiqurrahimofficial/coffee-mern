@@ -60,6 +60,18 @@ const ChatBot = () => {
     chatSessionIdRef.current = chatSessionId;
   }, [chatSessionId]);
 
+  useEffect(() => {
+    // Lock body scroll when chat panel is open so the whole screen doesn't scroll
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   const { data: historyData } = useGetMessagesQuery(chatSessionId, {
     skip: !chatSessionId,
   });
@@ -234,10 +246,13 @@ const ChatBot = () => {
   }, [token, dispatch]);
 
   useEffect(() => {
-    if (open && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+    if (open) {
+      const endEl = adminMessagesEndRef.current || messagesEndRef.current;
+      if (endEl) {
+        endEl.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
     }
-  }, [messages, open]);
+  }, [messages, adminMessages, open]);
 
   const sendUserMessage = (text) => {
     const trimmed = text.trim();
@@ -250,6 +265,15 @@ const ChatBot = () => {
       return;
     }
 
+    const optimisticMsg = {
+      id: `temp-${Date.now()}`,
+      text: trimmed,
+      sender: "customer",
+      senderName: userEmail,
+      senderRole: "customer",
+      createdAt: new Date().toISOString(),
+    };
+    dispatch(addMessage(optimisticMsg));
     socket.emit("chat:send", {
       sessionId: chatSessionId,
       text: trimmed,
@@ -307,10 +331,10 @@ const ChatBot = () => {
             zIndex: 40,
             cursor: isDragging ? "grabbing" : "grab",
           }}
-          className="flex items-center gap-2 rounded-full bg-[#1d1d1d] py-3.5 pl-4 pr-5 text-sm font-semibold text-white shadow-xl shadow-black/20 transition hover:scale-105 hover:bg-[#e11d48]"
+          className="fixed bottom-1 right-1 z-50 h-10 w-10 rounded-full bg-[#e11d48] flex items-center justify-center p-2 text-white shadow-xl shadow-black/20 transition hover:bg-[#c81a40] md:h-auto md:w-auto md:rounded-full md:px-4 md:py-2.5 md:text-sm md:font-semibold md:gap-2"
         >
           <UserCircleIcon className="h-6 w-6" />
-          <span className="hidden sm:inline">Support Chat</span>
+          <span className="hidden md:inline">Support Chat</span>
         </button>
       )}
 
@@ -320,8 +344,18 @@ const ChatBot = () => {
           aria-label="Support chat"
           style={{
             position: "fixed",
-            top: dragPos.y || window.innerHeight - 600,
-            left: dragPos.x || window.innerWidth - 400,
+            width: window.innerWidth < 768 ? "90vw" : "400px",
+            maxWidth: window.innerWidth < 768 ? "90vw" : "400px",
+            top:
+              dragPos.y ||
+              (window.innerWidth < 768
+                ? (window.innerHeight - 520) / 2
+                : window.innerHeight - 600),
+            left:
+              dragPos.x ||
+              (window.innerWidth < 768
+                ? (window.innerWidth - 360) / 2
+                : window.innerWidth - 400),
             zIndex: 40,
           }}
           className="flex h-[min(560px,calc(100vh-2.5rem))] w-[min(380px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-3xl border border-black/5 bg-white shadow-2xl shadow-black/25"
@@ -398,6 +432,7 @@ const ChatBot = () => {
                 </div>
               </div>
             ))}
+            <div ref={adminMessagesEndRef} />
             {isAdminTyping && (
               <div className="flex justify-start">
                 <div className="max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm rounded-bl-md bg-white text-[#1d1d1d]">

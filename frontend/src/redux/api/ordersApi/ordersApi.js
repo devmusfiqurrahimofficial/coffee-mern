@@ -1,18 +1,33 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { API_BASE_URL } from "../../../utils/apiConfig";
 
+const baseQuery = fetchBaseQuery({
+  baseUrl: `${API_BASE_URL}/`,
+  prepareHeaders: (headers) => {
+    const token = localStorage.getItem("access-token");
+    if (token) {
+      headers.set("authorization", `Bearer ${token}`);
+    }
+    return headers;
+  },
+});
+
+// Clear a stale/invalid JWT and send the user to login on 401 so the
+// frontend does not fail silently when the backend token is missing/expired.
+const baseQueryWithAuthHandling = async (args, api, extraOptions) => {
+  const result = await baseQuery(args, api, extraOptions);
+  if (result.error && result.error.status === 401) {
+    localStorage.removeItem("access-token");
+    if (window.location.pathname !== "/login") {
+      window.location.href = "/login";
+    }
+  }
+  return result;
+};
+
 export const ordersApi = createApi({
   reducerPath: "ordersApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${API_BASE_URL}/`,
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("access-token");
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: baseQueryWithAuthHandling,
   tagTypes: ["Orders"],
   endpoints: (build) => ({
     // Place a new order (checkout details + payment) -> stored in /orders

@@ -4,3 +4,32 @@ export const API_BASE_URL =
   import.meta.env.VITE_API_URL?.replace(/\/+$/, "") || "https://coffee-mern.onrender.com";
 
 export default API_BASE_URL;
+
+// Normalize a product image URL so it always points to the deployed API.
+// Fixes mixed-content errors when stored image values still reference
+// http://localhost:5000 while the site is served over HTTPS.
+export const toImageUrl = (image) => {
+  if (!image) return image;
+  // Full URL already — leave non-localhost origins untouched, repoint localhost.
+  if (
+    image.startsWith("http://") ||
+    image.startsWith("https://")
+  ) {
+    try {
+      const url = new URL(image);
+      if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
+        return image;
+      }
+      const base = new URL(API_BASE_URL);
+      url.protocol = base.protocol;
+      url.hostname = base.hostname;
+      url.port = base.port;
+      return url.toString();
+    } catch {
+      return image;
+    }
+  }
+  // Stored reference like "products/<id>" or a bare id -> serve via /images/products/:id.
+  const id = image.startsWith("products/") ? image.slice("products/".length) : image;
+  return `${API_BASE_URL}/images/products/${id}`;
+};
