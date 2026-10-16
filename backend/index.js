@@ -30,7 +30,14 @@ app.use(helmet());
 
 // 2. CORS: allow the trusted frontend origin plus localhost for development
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "https://coffee-mern.netlify.app";
-const ALLOWED_ORIGINS = [FRONTEND_ORIGIN, "http://localhost:5173", "http://localhost:5174"];
+const ALLOWED_ORIGINS = [
+  FRONTEND_ORIGIN,
+  "https://resplendent-begonia-d8c942.netlify.app",
+  "https://coffee-mern.netlify.app",
+  "https://coffee-mern.onrender.com",
+  "http://localhost:5173",
+  "http://localhost:5174",
+];
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true); // allow non-browser requests (curl, etc.)
@@ -87,7 +94,7 @@ const client = new MongoClient(uri);
 
 // Public base URL used to turn stored image references into full URLs.
 // Set BASE_URL in .env when you deploy (e.g. https://api.yoursite.com).
-const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`;
+const BASE_URL = process.env.BASE_URL || "https://coffee-mern.onrender.com";
 
 // All product images are stored in MongoDB (productImages collection) and
 // served via GET /images/products/:id. The DB stores either a "products/<id>"

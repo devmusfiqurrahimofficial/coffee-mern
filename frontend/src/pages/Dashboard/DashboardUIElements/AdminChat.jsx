@@ -13,8 +13,8 @@ import {
 } from "../../../redux/features/chatSlice/chatSlice";
 import { useGetChatsQuery, useGetMessagesQuery } from "../../../redux/api/chatApi/chatApi";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://coffee-mern.onrender.com";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://coffee-mern.onrender.com";
 
 const formatTime = (iso) => {
   if (!iso) return "";

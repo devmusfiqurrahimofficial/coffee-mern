@@ -109,7 +109,7 @@ const EditBlogModal = ({ blog, onClose, onSaved }) => {
                 type="text"
                 value={form.image}
                 onChange={updateField("image")}
-                placeholder="http://localhost:5000/images/…"
+                placeholder="https://coffee-mern.onrender.com/images/…"
                 className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition focus:border-[#e11d48]"
               />
             </div>
