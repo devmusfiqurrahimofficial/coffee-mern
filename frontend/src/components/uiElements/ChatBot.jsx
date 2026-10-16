@@ -448,7 +448,12 @@ const ChatBot = () => {
 
           {/* Messages */}
           <div className="flex-1 space-y-3 overflow-y-auto bg-[#EAE7DE] px-4 py-4">
-            {messages.map((item) => (
+            {(() => {
+              const allMessages = [
+                ...messages.map((m) => ({ ...m, _ts: m.time || m.createdAt })),
+                ...adminMessages.map((m) => ({ ...m, _ts: m.createdAt || m.time })),
+              ].sort((a, b) => new Date(a._ts).getTime() - new Date(b._ts).getTime());
+              return allMessages.map((item) => (
               <div
                 key={item.id}
                 className={`flex ${item.sender === "user" || item.sender === "customer" ? "justify-end" : "justify-start"}`}
@@ -472,18 +477,9 @@ const ChatBot = () => {
                   </p>
                 </div>
               </div>
-            ))}
-            {adminMessages.map((item) => (
-              <div key={item.id} className="flex justify-start">
-                <div className="max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm rounded-bl-md bg-white text-[#1d1d1d]">
-                  <p className="whitespace-pre-line">{item.text}</p>
-                  <p className="mt-1 text-[10px] text-neutral-400">
-                    {safeFormatTime(item.createdAt || item.time)}
-                  </p>
-                </div>
-              </div>
-            ))}
-            <div ref={adminMessagesEndRef} />
+              ));
+            })()}
+          <div ref={adminMessagesEndRef} />
             {isAdminTyping && (
               <div className="flex justify-start">
                 <div className="max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm rounded-bl-md bg-white text-[#1d1d1d]">
@@ -526,6 +522,7 @@ const ChatBot = () => {
           </form>
         </section>
       )}
+
     </>
   );
 };
