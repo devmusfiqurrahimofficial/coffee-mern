@@ -51,6 +51,14 @@ const ChatBot = () => {
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
 
+  // Persist chat session across page refreshes so history is not lost
+  const savedSessionId = localStorage.getItem("chatSessionId");
+  useEffect(() => {
+    if (savedSessionId && !chatSessionId) {
+      dispatch(setChatSessionId(savedSessionId));
+    }
+  }, [savedSessionId, chatSessionId, dispatch]);
+
   const socketRef = useRef(null);
   const adminMessagesEndRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -158,6 +166,7 @@ const ChatBot = () => {
         if (sid && typeof sid === "object" && sid.$oid) sid = sid.$oid;
         if (typeof sid === "string" && /^[0-9a-fA-F]{24}$/.test(sid)) {
           dispatch(setChatSessionId(sid));
+          localStorage.setItem("chatSessionId", sid);
           return sid;
         }
         throw new Error("Invalid session id received from server");
@@ -172,6 +181,7 @@ const ChatBot = () => {
       const sessionId = await createChatSession();
       if (!sessionId) return;
       dispatch(setChatSessionId(sessionId));
+      localStorage.setItem("chatSessionId", sessionId);
 
       const socket = io(SOCKET_URL, {
         auth: { token },
