@@ -1450,10 +1450,22 @@ app.post(
       async (req, res) => {
         try {
           const { customerName, customerEmail, status = "active" } = req.body;
+          const cleanEmail = (customerEmail || req.user.email || "").trim().toLowerCase();
           const user = await db.collection("user").findOne({ uid: req.user.email });
+          // One chat session per customer email — return existing if one exists
+          const existingSession = await chatSessionCollection.findOne({
+            customerEmail: cleanEmail,
+          });
+          if (existingSession) {
+            return res.status(200).send({
+              ...existingSession,
+              _id: existingSession._id,
+              sessionId: existingSession._id,
+            });
+          }
           const session = {
             customerName: customerName || "Customer",
-            customerEmail: customerEmail || req.user.email,
+            customerEmail: cleanEmail,
             customerId: req.user.email,
             status,
             createdAt: new Date(),
