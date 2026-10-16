@@ -5,7 +5,16 @@ import { API_BASE_URL } from "../../../utils/apiConfig";
 // Define a service using a base URL and expected endpoints
 export const productApi = createApi({
   reducerPath: 'pokemonApi',
-  baseQuery: fetchBaseQuery({ baseUrl: `${API_BASE_URL}/` }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: `${API_BASE_URL}/`,
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("access-token");
+      if (token) {
+        headers.set("authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
   tagTypes: ["Products"],
   endpoints: (build) => ({
     getProducts: build.query({

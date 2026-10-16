@@ -3,7 +3,6 @@ import { Outlet, Link } from 'react-router'
 import { Bars3Icon } from '@heroicons/react/24/solid'
 import { Sidebar } from '../../pages/Dashboard/DashboardUIElements/Sidebar'
 import logo from '../../assets/image/logo-2.png'
-import ChatBot from '../uiElements/ChatBot'
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -37,8 +36,6 @@ const DashboardLayout = () => {
           <Outlet/>
         </main>
       </div>
-
-      <ChatBot />
     </div>
   )
 }

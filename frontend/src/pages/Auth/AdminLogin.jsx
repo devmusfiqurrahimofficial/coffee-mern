@@ -10,8 +10,9 @@ import {
   ShieldCheckIcon,
 } from "@heroicons/react/24/solid";
 import logo from "../../assets/image/logo.png";
-import { useGenerateJWTMutation } from "../../redux/api/userApi/userApi";
+
 import { isAdminEmail } from "../../utils/admin";
+import { useGenerateJWTMutation } from "../../redux/api/userApi/userApi";
 
 const getErrorText = (error) => {
   if (error?.status === "FETCH_ERROR") {
@@ -74,6 +75,7 @@ const AdminLogin = () => {
 
       const { token } = await generateJWT(credential.user.email).unwrap();
       localStorage.setItem("access-token", token);
+      console.log("Admin signed in successfully, JWT stored:", token);
 
       navigate(returnTo, { replace: true });
     } catch (error) {

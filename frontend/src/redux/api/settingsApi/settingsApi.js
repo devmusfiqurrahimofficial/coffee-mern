@@ -3,7 +3,16 @@ import { API_BASE_URL } from "../../../utils/apiConfig";
 
 export const settingsApi = createApi({
   reducerPath: "settingsApi",
-  baseQuery: fetchBaseQuery({ baseUrl: `${API_BASE_URL}/` }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: `${API_BASE_URL}/`,
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("access-token");
+      if (token) {
+        headers.set("authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
   tagTypes: ["Settings"],
   endpoints: (build) => ({
     // Public store settings (store info + delivery prices)

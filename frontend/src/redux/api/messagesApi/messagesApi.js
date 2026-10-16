@@ -3,7 +3,16 @@ import { API_BASE_URL } from "../../../utils/apiConfig";
 
 export const messagesApi = createApi({
   reducerPath: "messagesApi",
-  baseQuery: fetchBaseQuery({ baseUrl: `${API_BASE_URL}/` }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: `${API_BASE_URL}/`,
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("access-token");
+      if (token) {
+        headers.set("authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
   tagTypes: ["Messages"],
   endpoints: (build) => ({
     // Public: submit a message from the contact page

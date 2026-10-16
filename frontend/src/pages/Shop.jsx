@@ -45,6 +45,11 @@ const Rating = ({ value, count }) => (
 );
 
 
+// Fallback shown when a product has no usable image URL. Keeps the shop
+// grid looking complete even when a product image is missing or fails to load.
+const PRODUCT_PLACEHOLDER =
+  "data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22400%22%20height=%22500%22%20viewBox=%220%200%20400%22%20500%22%3E%3Crect%20width=%22400%22%20height=%22500%22%20fill=%22%23f3efe7%22/%3E%3Ccircle%20cx=%22200%22%20cy=%22200%22%20r=%2250%22%20fill=%22%23d6d3d1%22/%3E%3Cpath%20d=%22M150%20260%20Q150%20340%20200%20340%20Q250%20340%20250%20260%22%20fill=%22none%22%20stroke=%22%23b9b7b5%22%20stroke-width=%2214%22%20stroke-linecap=%22round%22/%3E%3Ctext%20x=%22200%22%20y=%22430%22%20font-family=%22serif%22%20font-size=%2222%22%20font-weight=%22bold%22%20fill=%22%239ca3af%22%20text-anchor=%22middle%22%3ENo%20Image%3C/text%3E%3C/svg%3E";
+
 // Product card
 
 const ProductCard = ({ product, onAdd }) => (
@@ -53,9 +58,12 @@ const ProductCard = ({ product, onAdd }) => (
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300" />
       <Link to={`/product/${product.id}`} aria-label={product.name}>
         <img
-          src={product.image}
+          src={product.image || PRODUCT_PLACEHOLDER}
           alt={product.name}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+          onError={(e) => {
+            e.currentTarget.src = PRODUCT_PLACEHOLDER;
+          }}
         />
       </Link>
       {product.badge && (

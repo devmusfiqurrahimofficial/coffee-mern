@@ -18,6 +18,7 @@ import { ManageOrders } from './pages/Dashboard/DashboardUIElements/ManageOrders
 import { ManageReviews } from './pages/Dashboard/DashboardUIElements/ManageReviews'
 import { ManageCustomers } from './pages/Dashboard/DashboardUIElements/ManageCustomers'
 import { ManageMessages } from './pages/Dashboard/DashboardUIElements/ManageMessages'
+import AdminChat from './pages/Dashboard/DashboardUIElements/AdminChat'
 import { StoreSettings } from './pages/Dashboard/DashboardUIElements/StoreSettings'
 import Login from './pages/Auth/Login'
 import AdminLogin from './pages/Auth/AdminLogin'
@@ -66,6 +67,7 @@ function App() {
           <Route path="/dashboard/reviews" element={<ManageReviews />} />
           <Route path="/dashboard/customers" element={<ManageCustomers />} />
           <Route path="/dashboard/messages" element={<ManageMessages />} />
+          <Route path="/dashboard/chats" element={<AdminChat />} />
           <Route path="/dashboard/settings" element={<StoreSettings />} />
           <Route path="/dashboard/add-product" element={<AddProduct />} />
        </Route>

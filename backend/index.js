@@ -1,31 +1,105 @@
 
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const { body, param, query, validationResult } = require("express-validator");
 const { randomUUID } = require("crypto");
 const fs = require("fs/promises");
 const { MongoClient, ObjectId } = require("mongodb");
 const path = require("path");
-require("dotenv").config();
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 const jwt = require("jsonwebtoken");
+const http = require("http");
+const { Server } = require("socket.io");
 
 const app = express();
 const port = process.env.PORT || 5000;
-app.use(cors());
-app.use(express.json());
+
+// Admin emails — users with these emails get role "admin" on first login.
+// Set ADMIN_EMAILS in .env (comma-separated) to override the default.
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "musfikurr93@gmail.com")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+// ---- Security middleware (from the Website Security Guide) ----
+
+// 1. Helmet: sets security-related HTTP headers
+app.use(helmet());
+
+// 2. CORS: allow the trusted frontend origin plus localhost for development
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "https://coffee-mern.netlify.app";
+const ALLOWED_ORIGINS = [FRONTEND_ORIGIN, "http://localhost:5173", "http://localhost:5174"];
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // allow non-browser requests (curl, etc.)
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      return callback(null, origin);
+    }
+    return callback(new Error("Not allowed by CORS policy"));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+app.use(cors(corsOptions));
+
+// 3. Limit JSON body size to prevent large payload attacks
+app.use(express.json({ limit: "20kb" }));
+
+// 4. Rate limiting for all API routes
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 500,               // max 500 requests per window
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later." },
+});
+// Apply rate limiting to all routes (frontend calls routes without /api prefix)
+app.use(apiLimiter);
+
+// Stricter limit for auth-sensitive endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many authentication attempts, please try again later." },
+});
+
+// ---- Helper: validation error handler ----
+const handleValidationErrors = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  next();
+};
+
+// ---- MongoDB connection ----
+const uri = process.env.MONGODB_URI;
+if (!uri) {
+  throw new Error("MONGODB_URI is not configured");
+}
+const client = new MongoClient(uri);
 
 
-app.use("/images", express.static(path.join(__dirname, "images")));
-
-// Public base URL used to turn stored image filenames into full URLs.
+// Public base URL used to turn stored image references into full URLs.
 // Set BASE_URL in .env when you deploy (e.g. https://api.yoursite.com).
 const BASE_URL = process.env.BASE_URL || `http://localhost:${port}`;
 
-// The DB stores just the filename (e.g. "sandwich.jpg"); convert it to a full URL.
-// If a value already looks like a URL, leave it untouched.
+// All product images are stored in MongoDB (productImages collection) and
+// served via GET /images/products/:id. The DB stores either a "products/<id>"
+// reference or a full URL. If a value already looks like a URL, leave it.
+// Bare filenames are no longer served statically — run import-product-images.js
+// to migrate them into MongoDB with products/<id> references.
 const toImageUrl = (image) => {
   if (!image) return image;
   if (/^(https?:)?\/\//i.test(image)) return image;
-  return `${BASE_URL}/images/${image}`;
+  // Normalize bare filenames or ids into the products/<id> route.
+  const normalized = image.startsWith("products/") ? image : `products/${image}`;
+  return `${BASE_URL}/images/${normalized}`;
 };
 
 // Attach a full image URL to a product document before sending it to the client
@@ -88,11 +162,70 @@ const toBlogResponse = (blog) =>
       }
     : blog;
 
-const uri = process.env.MONGODB_URI;
-if (!uri) {
-  throw new Error("MONGODB_URI is not configured");
-}
-const client = new MongoClient(uri);
+// ---- Authentication middleware ----
+// Verifies the JWT and attaches req.user (from the token payload).
+const authenticateUser = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+
+  const token = authHeader.slice(7);
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    return res.status(500).json({ message: "Server configuration error" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, jwtSecret);
+    req.user = { email: decoded.email, role: decoded.role };
+    console.log("Auth: token verified for", decoded.email);
+    next();
+  } catch (error) {
+    console.error("Auth: JWT verification failed:", error.message);
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
+};
+
+// ---- Authorization middleware ----
+// Ensures the authenticated user is an admin.
+// Admin status is determined server-side (never trusted from the client).
+const requireAdmin = async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+
+  try {
+    const db = client.db("mydatabase");
+    const user = await db.collection("user").findOne({ uid: req.user.email });
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied: admin only" });
+    }
+    next();
+  } catch (error) {
+    console.error("Admin check error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ---- Ownership middleware factory ----
+// Ensures the authenticated user owns the resource they are accessing.
+// `getOwnerEmail` should return the email of the resource owner from the DB.
+const requireOwnership = (getOwnerEmail) => async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  try {
+    const ownerEmail = await getOwnerEmail(req);
+    if (!ownerEmail || ownerEmail.toLowerCase() !== req.user.email.toLowerCase()) {
+      return res.status(403).json({ message: "Access denied: not the owner" });
+    }
+    next();
+  } catch (error) {
+    console.error("Ownership check error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
 
 async function run() {
   try {
@@ -108,6 +241,8 @@ async function run() {
     const orderCollection = db.collection("orders");
     const settingsCollection = db.collection("settings");
     const messageCollection = db.collection("messages");
+    const chatSessionCollection = db.collection("chatSessions");
+    const chatMessageCollection = db.collection("chatMessages");
 
     await Promise.all([
       blogCollection.createIndex({ createdAt: -1 }),
@@ -132,9 +267,10 @@ async function run() {
         if (!cover) {
           return res.status(404).send({ error: "Image not found" });
         }
+        const coverData = cover.data;
         res.set("Content-Type", cover.contentType || "application/octet-stream");
         res.set("Cache-Control", "public, max-age=31536000, immutable");
-        res.send(cover.data?.buffer || cover.data);
+        res.send(Buffer.isBuffer(coverData) ? coverData : (coverData?.buffer || coverData));
       } catch (error) {
         console.error("Error serving blog cover:", error);
         res.status(500).send({ error: "Failed to load image" });
@@ -148,9 +284,12 @@ async function run() {
         if (!image) {
           return res.status(404).send({ error: "Image not found" });
         }
+        const imageData = image.data;
         res.set("Content-Type", image.contentType || "application/octet-stream");
         res.set("Cache-Control", "public, max-age=31536000, immutable");
-        res.send(image.data?.buffer || image.data);
+        // Allow cross-origin (e.g. frontend on :5173) to embed these images.
+        res.set("Cross-Origin-Resource-Policy", "cross-origin");
+        res.send(Buffer.isBuffer(imageData) ? imageData : (imageData?.buffer || imageData));
       } catch (error) {
         console.error("Error serving product image:", error);
         res.status(500).send({ error: "Failed to load image" });
@@ -161,30 +300,71 @@ async function run() {
       res.send("Server is running!");
     });
 
-        //jwt token generation api
-app.post("/jwt", (req, res) => {
-  const { email } = req.body;
-  const jwtSecret = process.env.JWT_SECRET;
+        //jwt token generation api — issues a JWT only after the email is
+    //verified against the users collection (never trust the client).
+app.post(
+  "/jwt",
+  authLimiter,
+  body("email").isEmail().normalizeEmail(),
+  handleValidationErrors,
+  async (req, res) => {
+    const jwtSecret = process.env.JWT_SECRET;
+    const email = req.body.email.toLowerCase();
 
-  if (!email) return res.status(400).send({ error: "Email is required" });
-  if (!jwtSecret) {
-    console.error("JWT_SECRET is missing from .env");
-    return res.status(500).send({ error: "JWT secret is not configured" });
-  }
+    if (!jwtSecret) {
+      console.error("JWT_SECRET is missing from .env");
+      return res.status(500).json({ error: "JWT secret is not configured" });
+    }
 
-  try {
-    const token = jwt.sign({ email }, jwtSecret, { expiresIn: "1h" });
-    res.send({ token });
-  } catch (error) {
-    console.error("JWT sign error:", error);
-    res.status(500).send({ error: "Failed to generate token" });
+    try {
+      await client.connect();
+
+      const db = client.db("mydatabase");
+      const userCollection = db.collection("user");
+
+      let user = await userCollection.findOne({ uid: email });
+      const isAdminEmail = ADMIN_EMAILS.includes(email);
+
+      if (!user) {
+        const newUser = {
+          uid: email,
+          email,
+          role: isAdminEmail ? "admin" : "customer",
+          createdAt: new Date(),
+        };
+
+        const result = await userCollection.insertOne(newUser);
+        user = { _id: result.insertedId, ...newUser };
+      } else if (isAdminEmail && user.role !== "admin") {
+        await userCollection.updateOne(
+          { _id: user._id },
+          { $set: { role: "admin" } }
+        );
+        user.role = "admin";
+      }
+
+      const token = jwt.sign(
+        {
+          userId: user._id.toString(),
+          email: user.email,
+          role: user.role,
+        },
+        jwtSecret,
+        { expiresIn: "1h" }
+      );
+
+      return res.status(200).json({ token });
+    } catch (error) {
+      console.error("JWT generation error:", error);
+      return res.status(500).json({ error: "Failed to generate token" });
+    }
   }
-});
-    // Direct image upload for products (stored in MongoDB so it works on
-    // hosts with a read-only or ephemeral filesystem, e.g. Render free tier)
+);   // hosts with a read-only or ephemeral filesystem, e.g. Render free tier)
     app.post(
       "/products/image",
-      express.raw({ type: "image/*", limit: "5mb" }),
+      authenticateUser,
+      requireAdmin,
+      express.raw({ type: "image/*", limit: "100mb" }),
       async (req, res) => {
         const contentType = (req.get("content-type") || "")
           .split(";")[0]
@@ -224,25 +404,33 @@ app.post("/jwt", (req, res) => {
       }
     );
 
-    app.post("/products", async (req, res) => {
-      try {
-        const product = req.body;
-        // Support both a single product and an array (bulk seed)
-        if (Array.isArray(product)) {
-          const result = await productCollection.insertMany(product);
-          return res
+    app.post(
+      "/products",
+      authenticateUser,
+      requireAdmin,
+      body("name").trim().notEmpty().withMessage("Name is required"),
+      body("price").isNumeric().withMessage("Price must be a number"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const product = req.body;
+          // Support both a single product and an array (bulk seed)
+          if (Array.isArray(product)) {
+            const result = await productCollection.insertMany(product);
+            return res
+              .status(201)
+              .send({ message: "Products inserted", count: result.insertedCount });
+          }
+          const result = await productCollection.insertOne(product);
+          res
             .status(201)
-            .send({ message: "Products inserted", count: result.insertedCount });
+            .send({ message: "Product inserted successfully", productId: result.insertedId });
+        } catch (error) {
+          console.error("Error inserting product:", error);
+          res.status(500).send({ error: "Failed to insert product" });
         }
-        const result = await productCollection.insertOne(product);
-        res
-          .status(201)
-          .send({ message: "Product inserted successfully", productId: result.insertedId });
-      } catch (error) {
-        console.error("Error inserting product:", error);
-        res.status(500).send({ error: "Failed to insert product" });
       }
-    });
+    );
 
     // Get all products
     app.get("/products", async (req, res) => {
@@ -276,67 +464,76 @@ app.post("/jwt", (req, res) => {
     });
 
     // Update a product (price is edited in USD; output is converted to BDT)
-    app.patch("/products/:id", async (req, res) => {
-      try {
-        const { id } = req.params;
-        if (!ObjectId.isValid(id)) {
-          return res.status(400).send({ error: "Invalid product id" });
-        }
+    app.patch(
+      "/products/:id",
+      authenticateUser,
+      requireAdmin,
+      param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid product id"),
+      body("price").optional().isNumeric().withMessage("Price must be a number"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
 
-        const allowed = ["name", "price", "category", "description", "image", "badge", "weight", "rating"];
-        const update = {};
-        for (const key of allowed) {
-          if (req.body?.[key] !== undefined) {
-            update[key] = key === "price" ? Number(req.body[key]) : req.body[key];
+          const allowed = ["name", "price", "category", "description", "image", "badge", "weight", "rating"];
+          const update = {};
+          for (const key of allowed) {
+            if (req.body?.[key] !== undefined) {
+              update[key] = key === "price" ? Number(req.body[key]) : req.body[key];
+            }
           }
-        }
-        if (update.price !== undefined && (!Number.isFinite(update.price) || update.price < 0)) {
-          return res.status(400).send({ error: "Price must be a non-negative number" });
-        }
+          if (update.price !== undefined && (!Number.isFinite(update.price) || update.price < 0)) {
+            return res.status(400).send({ error: "Price must be a non-negative number" });
+          }
 
-        if (Object.keys(update).length === 0) {
-          return res.status(400).send({ error: "No fields to update" });
+          if (Object.keys(update).length === 0) {
+            return res.status(400).send({ error: "No fields to update" });
+          }
+
+          const updated = await productCollection.findOneAndUpdate(
+            { _id: new ObjectId(id) },
+            { $set: update },
+            { returnDocument: "after" }
+          );
+
+          if (!updated) {
+            return res.status(404).send({ error: "Product not found" });
+          }
+
+          res.send(toProductResponse(updated));
+        } catch (error) {
+          console.error("Error updating product:", error);
+          res.status(500).send({ error: "Failed to update product" });
         }
-
-        const updated = await productCollection.findOneAndUpdate(
-          { _id: new ObjectId(id) },
-          { $set: update },
-          { returnDocument: "after" }
-        );
-
-        if (!updated) {
-          return res.status(404).send({ error: "Product not found" });
-        }
-
-        res.send(toProductResponse(updated));
-      } catch (error) {
-        console.error("Error updating product:", error);
-        res.status(500).send({ error: "Failed to update product" });
       }
-    });
+    );
 
     // Delete a product
-    app.delete("/products/:id", async (req, res) => {
-      try {
-        const { id } = req.params;
-        if (!ObjectId.isValid(id)) {
-          return res.status(400).send({ error: "Invalid product id" });
+    app.delete(
+      "/products/:id",
+      authenticateUser,
+      requireAdmin,
+      param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid product id"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
+          const result = await productCollection.deleteOne({ _id: new ObjectId(id) });
+          if (!result.deletedCount) {
+            return res.status(404).send({ error: "Product not found" });
+          }
+          res.send({ message: "Product deleted successfully" });
+        } catch (error) {
+          console.error("Error deleting product:", error);
+          res.status(500).send({ error: "Failed to delete product" });
         }
-        const result = await productCollection.deleteOne({ _id: new ObjectId(id) });
-        if (!result.deletedCount) {
-          return res.status(404).send({ error: "Product not found" });
-        }
-        res.send({ message: "Product deleted successfully" });
-      } catch (error) {
-        console.error("Error deleting product:", error);
-        res.status(500).send({ error: "Failed to delete product" });
       }
-    });
+    );
 
     // ----- Reviews -----
 
-    // Get all reviews across all products (for the admin dashboard)
-    app.get("/reviews", async (req, res) => {
+    // Get all reviews across all products (admin only)
+    app.get("/reviews", authenticateUser, requireAdmin, async (req, res) => {
       try {
         const reviews = await reviewCollection
           .find()
@@ -374,32 +571,32 @@ app.post("/jwt", (req, res) => {
       }
     });
 
-    // Add a review for a product
-    app.post("/reviews", async (req, res) => {
-      try {
-        const { productId, name, rating, comment } = req.body;
+    // Add a review for a product (authenticated users only)
+    app.post(
+      "/reviews",
+      authenticateUser,
+      body("productId").trim().notEmpty().withMessage("productId is required"),
+      body("rating").isInt({ min: 1, max: 5 }).withMessage("rating must be between 1 and 5"),
+      body("name").optional().trim().escape(),
+      body("comment").optional().trim().escape(),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { productId, name, rating, comment } = req.body;
 
-        // Basic validation
-        if (!productId) {
-          return res.status(400).send({ error: "productId is required" });
-        }
-        const numericRating = Number(rating);
-        if (!numericRating || numericRating < 1 || numericRating > 5) {
-          return res.status(400).send({ error: "rating must be between 1 and 5" });
-        }
+          const review = {
+            productId,
+            userEmail: req.user.email,
+            name: name?.trim() || "Anonymous",
+            rating: Number(rating),
+            comment: comment?.trim() || "",
+            createdAt: new Date(),
+          };
 
-        const review = {
-          productId,
-          name: name?.trim() || "Anonymous",
-          rating: numericRating,
-          comment: comment?.trim() || "",
-          createdAt: new Date(),
-        };
-
-        const result = await reviewCollection.insertOne(review);
-        res.status(201).send({ ...review, _id: result.insertedId });
-      } catch (error) {
-        console.error("Error adding review:", error);
+          const result = await reviewCollection.insertOne(review);
+          res.status(201).send({ ...review, _id: result.insertedId });
+        } catch (error) {
+          console.error("Error adding review:", error);
         res.status(500).send({ error: "Failed to add review" });
       }
     });
@@ -424,7 +621,15 @@ app.post("/jwt", (req, res) => {
     app.get("/settings", async (req, res) => {
       try {
         const settings = await settingsCollection.findOne({});
-        res.send({ ...DEFAULT_SETTINGS, ...(settings || {}) });
+        // Only expose safe, storefront-relevant fields
+        const safeSettings = {
+          storeName: settings?.storeName || DEFAULT_SETTINGS.storeName,
+          supportEmail: settings?.supportEmail || DEFAULT_SETTINGS.supportEmail,
+          phone: settings?.phone || DEFAULT_SETTINGS.phone,
+          address: settings?.address || DEFAULT_SETTINGS.address,
+          deliveryPrices: settings?.deliveryPrices || DEFAULT_SETTINGS.deliveryPrices,
+        };
+        res.send(safeSettings);
       } catch (error) {
         console.error("Error fetching settings:", error);
         res.status(500).send({ error: "Failed to fetch settings" });
@@ -432,61 +637,72 @@ app.post("/jwt", (req, res) => {
     });
 
     // Admin updates store settings
-    app.put("/settings", async (req, res) => {
-      try {
-        const body = req.body || {};
-        const update = {};
+    app.put(
+      "/settings",
+      authenticateUser,
+      requireAdmin,
+      body("storeName").optional().trim().notEmpty().withMessage("Store name cannot be empty"),
+      body("supportEmail").optional().isEmail().normalizeEmail(),
+      body("phone").optional().trim().notEmpty(),
+      body("address").optional().trim().notEmpty(),
+      body("deliveryPrices").optional().isObject(),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const body = req.body || {};
+          const update = {};
 
-        if (body.storeName !== undefined) {
-          if (!String(body.storeName).trim()) {
-            return res.status(400).send({ error: "Store name cannot be empty" });
-          }
-          update.storeName = String(body.storeName).trim();
-        }
-        for (const field of ["supportEmail", "phone", "address"]) {
-          if (body[field] !== undefined) {
-            update[field] = String(body[field]).trim();
-          }
-        }
-
-        if (body.deliveryPrices !== undefined) {
-          const prices = body.deliveryPrices;
-          const deliveryPrices = {};
-          for (const method of Object.keys(DEFAULT_DELIVERY_PRICES)) {
-            const value = Number(prices?.[method]);
-            if (!Number.isFinite(value) || value < 0) {
-              return res.status(400).send({
-                error: `Delivery price for ${method} must be a non-negative number`,
-              });
+          if (body.storeName !== undefined) {
+            if (!String(body.storeName).trim()) {
+              return res.status(400).send({ error: "Store name cannot be empty" });
             }
-            deliveryPrices[method] = value;
+            update.storeName = String(body.storeName).trim();
           }
-          update.deliveryPrices = deliveryPrices;
-        }
+          for (const field of ["supportEmail", "phone", "address"]) {
+            if (body[field] !== undefined) {
+              update[field] = String(body[field]).trim();
+            }
+          }
 
-        if (Object.keys(update).length === 0) {
-          return res.status(400).send({ error: "No settings to update" });
-        }
+          if (body.deliveryPrices !== undefined) {
+            const prices = body.deliveryPrices;
+            const deliveryPrices = {};
+            for (const method of Object.keys(DEFAULT_DELIVERY_PRICES)) {
+              const value = Number(prices?.[method]);
+              if (!Number.isFinite(value) || value < 0) {
+                return res.status(400).send({
+                  error: `Delivery price for ${method} must be a non-negative number`,
+                });
+              }
+              deliveryPrices[method] = value;
+            }
+            update.deliveryPrices = deliveryPrices;
+          }
 
-        const existing = await settingsCollection.findOne({});
-        let saved;
-        if (existing) {
-          saved = await settingsCollection.findOneAndUpdate(
-            { _id: existing._id },
-            { $set: { ...update, updatedAt: new Date() } },
-            { returnDocument: "after" }
-          );
-        } else {
-          saved = { ...DEFAULT_SETTINGS, ...update, updatedAt: new Date() };
-          await settingsCollection.insertOne(saved);
-        }
+          if (Object.keys(update).length === 0) {
+            return res.status(400).send({ error: "No settings to update" });
+          }
 
-        res.send({ ...DEFAULT_SETTINGS, ...saved });
-      } catch (error) {
-        console.error("Error updating settings:", error);
-        res.status(500).send({ error: "Failed to update settings" });
+          const existing = await settingsCollection.findOne({});
+          let saved;
+          if (existing) {
+            saved = await settingsCollection.findOneAndUpdate(
+              { _id: existing._id },
+              { $set: { ...update, updatedAt: new Date() } },
+              { returnDocument: "after" }
+            );
+          } else {
+            saved = { ...DEFAULT_SETTINGS, ...update, updatedAt: new Date() };
+            await settingsCollection.insertOne(saved);
+          }
+
+          res.send({ ...DEFAULT_SETTINGS, ...saved });
+        } catch (error) {
+          console.error("Error updating settings:", error);
+          res.status(500).send({ error: "Failed to update settings" });
+        }
       }
-    });
+    );
 
     // ----- Orders -----
 
@@ -619,32 +835,86 @@ app.post("/jwt", (req, res) => {
     };
 
     // Place an order after checkout details + payment method are collected
-    app.post("/orders", async (req, res) => {
-      try {
-        const { error, order } = await buildOrderFromRequest(req.body);
-        if (error) {
-          return res.status(400).send({ error });
-        }
+    app.post(
+      "/orders",
+      authenticateUser,
+      body("items").isArray({ min: 1 }).withMessage("Order items are required"),
+      body("customer.firstName").trim().notEmpty().withMessage("First name is required"),
+      body("customer.lastName").trim().notEmpty().withMessage("Last name is required"),
+      body("customer.email").isEmail().normalizeEmail().withMessage("Valid email is required"),
+      body("customer.phone").trim().notEmpty().withMessage("Phone is required"),
+      body("address.street").trim().notEmpty().withMessage("Street is required"),
+      body("address.city").trim().notEmpty().withMessage("City is required"),
+      body("address.zip").trim().notEmpty().withMessage("Zip is required"),
+      body("address.country").trim().notEmpty().withMessage("Country is required"),
+      body("deliveryMethod").isIn(["standard", "express"]).withMessage("Invalid delivery method"),
+      body("payment.method").isIn(["card", "cod"]).withMessage("Invalid payment method"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { error, order } = await buildOrderFromRequest(req.body);
+          if (error) {
+            return res.status(400).send({ error });
+          }
 
-        const result = await orderCollection.insertOne(order);
-        res.status(201).send(toOrderResponse({ ...order, _id: result.insertedId }));
-      } catch (error) {
-        console.error("Error placing order:", error);
-        res.status(500).send({ error: "Failed to place order" });
+          // Server-side price verification: never trust frontend-calculated totals.
+          // Look up each product in the database and verify the price matches.
+          for (const item of order.items) {
+            if (!item.productId) continue;
+            try {
+              const product = await productCollection.findOne({ _id: new ObjectId(item.productId) });
+              if (!product) {
+                return res.status(400).send({ error: `Product not found: ${item.name}` });
+              }
+              const dbPrice = Number(product.price);
+              const frontendPrice = Number(item.price);
+              if (Math.abs(dbPrice - frontendPrice) > 0.01) {
+                return res.status(400).send({
+                  error: `Price mismatch for ${item.name}`,
+                });
+              }
+            } catch (err) {
+              if (err.status) throw err;
+              console.error("Product lookup error:", err);
+              return res.status(500).send({ error: "Failed to verify product prices" });
+            }
+          }
+
+          // Record the authenticated user's email as the order owner
+          order.userEmail = req.user.email;
+
+          // Payment is always pending until an admin confirms receipt.
+          // Card details are recorded but not processed server-side (no Stripe SDK).
+          order.paymentStatus = "pending";
+
+          const result = await orderCollection.insertOne(order);
+          res.status(201).send(toOrderResponse({ ...order, _id: result.insertedId }));
+        } catch (error) {
+          console.error("Error placing order:", error);
+          res.status(500).send({ error: "Failed to place order" });
+        }
       }
-    });
+    );
 
     // List orders (optionally filtered by status and/or customer email) — newest first
-    app.get("/orders", async (req, res) => {
+    app.get("/orders", authenticateUser, async (req, res) => {
       try {
+        const db = client.db("mydatabase");
+        const user = await db.collection("user").findOne({ uid: req.user.email });
+        const isAdmin = user && user.role === "admin";
+
         const filter = {};
+        if (!isAdmin) {
+          // Non-admins can only see their own orders
+          filter.userEmail = req.user.email;
+        }
         if (req.query.status) {
           if (!ALLOWED_ORDER_STATUSES.includes(req.query.status)) {
             return res.status(400).send({ error: "Invalid order status" });
           }
           filter.status = req.query.status;
         }
-        if (req.query.email) {
+        if (req.query.email && isAdmin) {
           filter["customer.email"] = String(req.query.email).trim().toLowerCase();
         }
         const orders = await orderCollection
@@ -658,160 +928,177 @@ app.post("/jwt", (req, res) => {
       }
     });
 
-    // Update an order's status (accept / reject / out for delivery / delivered)
-    app.patch("/orders/:id", async (req, res) => {
-      try {
-        const { id } = req.params;
-        const { status } = req.body;
+    // Update an order's status (accept / reject / out for delivery / delivered) — admin only
+    app.patch(
+      "/orders/:id",
+      authenticateUser,
+      requireAdmin,
+      param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid order id"),
+      body("status").isIn(ALLOWED_ORDER_STATUSES).withMessage("Invalid order status"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
+          const { status } = req.body;
 
-        if (!ObjectId.isValid(id)) {
-          return res.status(400).send({ error: "Invalid order id" });
-        }
-        if (!ALLOWED_ORDER_STATUSES.includes(status)) {
-          return res.status(400).send({ error: "Invalid order status" });
-        }
-
-        const order = await orderCollection.findOne({ _id: new ObjectId(id) });
-        if (!order) {
-          return res.status(404).send({ error: "Order not found" });
-        }
-
-        const currentStatus = order.status || "pending";
-        if (currentStatus !== status) {
-          const allowed = ALLOWED_STATUS_FLOW[currentStatus] || [];
-          if (!allowed.includes(status)) {
-            return res.status(409).send({
-              error: `Cannot change a ${currentStatus} order to ${status}`,
-            });
+          const order = await orderCollection.findOne({ _id: new ObjectId(id) });
+          if (!order) {
+            return res.status(404).send({ error: "Order not found" });
           }
+
+          const currentStatus = order.status || "pending";
+          if (currentStatus !== status) {
+            const allowed = ALLOWED_STATUS_FLOW[currentStatus] || [];
+            if (!allowed.includes(status)) {
+              return res.status(409).send({
+                error: `Cannot change a ${currentStatus} order to ${status}`,
+              });
+            }
+          }
+
+          const updated = await orderCollection.findOneAndUpdate(
+            { _id: new ObjectId(id) },
+            { $set: { status, updatedAt: new Date() } },
+            { returnDocument: "after" }
+          );
+
+          res.send(toOrderResponse(updated));
+        } catch (error) {
+          console.error("Error updating order:", error);
+          res.status(500).send({ error: "Failed to update order" });
         }
-
-        const updated = await orderCollection.findOneAndUpdate(
-          { _id: new ObjectId(id) },
-          { $set: { status, updatedAt: new Date() } },
-          { returnDocument: "after" }
-        );
-
-        res.send(toOrderResponse(updated));
-      } catch (error) {
-        console.error("Error updating order:", error);
-        res.status(500).send({ error: "Failed to update order" });
       }
-    });
+    );
 
-    // Fetch a single order by id
-    app.get("/orders/:id", async (req, res) => {
-      try {
-        const { id } = req.params;
-        if (!ObjectId.isValid(id)) {
-          return res.status(400).send({ error: "Invalid order id" });
+    // Fetch a single order by id — owner or admin only
+    app.get(
+      "/orders/:id",
+      authenticateUser,
+      param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid order id"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
+          const order = await orderCollection.findOne({ _id: new ObjectId(id) });
+          if (!order) {
+            return res.status(404).send({ error: "Order not found" });
+          }
+
+          // Check ownership: the order's userEmail must match, or the user must be admin
+          const db = client.db("mydatabase");
+          const user = await db.collection("user").findOne({ uid: req.user.email });
+          const isAdmin = user && user.role === "admin";
+
+          if (!isAdmin && order.userEmail !== req.user.email) {
+            return res.status(403).send({ error: "Access denied: not your order" });
+          }
+
+          res.send(toOrderResponse(order));
+        } catch (error) {
+          console.error("Error fetching order:", error);
+          res.status(500).send({ error: "Failed to fetch order" });
         }
-        const order = await orderCollection.findOne({ _id: new ObjectId(id) });
-        if (!order) {
-          return res.status(404).send({ error: "Order not found" });
-        }
-        res.send(toOrderResponse(order));
-      } catch (error) {
-        console.error("Error fetching order:", error);
-        res.status(500).send({ error: "Failed to fetch order" });
       }
-    });
+    );
 
     // Admin comment on a review (the author is always "admin")
-    app.post("/reviews/:id/reply", async (req, res) => {
-      try {
-        const { id } = req.params;
-        const text = req.body?.text?.trim();
+    app.post(
+      "/reviews/:id/reply",
+      authenticateUser,
+      requireAdmin,
+      param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid review id"),
+      body("text").trim().notEmpty().withMessage("Reply text is required"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
+          const text = req.body.text.trim();
 
-        if (!ObjectId.isValid(id)) {
-          return res.status(400).send({ error: "Invalid review id" });
+          const reply = {
+            name: "admin",
+            text,
+            createdAt: new Date(),
+          };
+
+          const updated = await reviewCollection.findOneAndUpdate(
+            { _id: new ObjectId(id) },
+            { $push: { replies: reply } },
+            { returnDocument: "after" }
+          );
+
+          if (!updated) {
+            return res.status(404).send({ error: "Review not found" });
+          }
+
+          res.status(201).send({ reviewId: id, reply });
+        } catch (error) {
+          console.error("Error replying to review:", error);
+          res.status(500).send({ error: "Failed to add reply" });
         }
-        if (!text) {
-          return res.status(400).send({ error: "Reply text is required" });
-        }
-
-        const reply = {
-          name: "admin",
-          text,
-          createdAt: new Date(),
-        };
-
-        const updated = await reviewCollection.findOneAndUpdate(
-          { _id: new ObjectId(id) },
-          { $push: { replies: reply } },
-          { returnDocument: "after" }
-        );
-
-        if (!updated) {
-          return res.status(404).send({ error: "Review not found" });
-        }
-
-        res.status(201).send({ reviewId: id, reply });
-      } catch (error) {
-        console.error("Error replying to review:", error);
-        res.status(500).send({ error: "Failed to add reply" });
       }
-    });
+    );
 
-    // Delete a review (admin dashboard)
-    app.delete("/reviews/:id", async (req, res) => {
-      try {
-        const { id } = req.params;
-        if (!ObjectId.isValid(id)) {
-          return res.status(400).send({ error: "Invalid review id" });
+    // Delete a review (admin only)
+    app.delete(
+      "/reviews/:id",
+      authenticateUser,
+      requireAdmin,
+      param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid review id"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
+          const result = await reviewCollection.deleteOne({
+            _id: new ObjectId(id),
+          });
+          if (!result.deletedCount) {
+            return res.status(404).send({ error: "Review not found" });
+          }
+          res.send({ message: "Review deleted successfully" });
+        } catch (error) {
+          console.error("Error deleting review:", error);
+          res.status(500).send({ error: "Failed to delete review" });
         }
-        const result = await reviewCollection.deleteOne({
-          _id: new ObjectId(id),
-        });
-        if (!result.deletedCount) {
-          return res.status(404).send({ error: "Review not found" });
-        }
-        res.send({ message: "Review deleted successfully" });
-      } catch (error) {
-        console.error("Error deleting review:", error);
-        res.status(500).send({ error: "Failed to delete review" });
       }
-    });
+    );
 
     // ----- Contact messages -----
 
     // Save a message from the contact page
-    app.post("/massage", async (req, res) => {
-      try {
-        const { name, email, message } = req.body;
-        const cleanName = name?.trim();
-        const cleanEmail = email?.trim().toLowerCase();
-        const cleanMessage = message?.trim();
+    app.post(
+      "/massage",
+      authLimiter,
+      body("name").trim().notEmpty().withMessage("Your name is required"),
+      body("email").isEmail().normalizeEmail().withMessage("A valid email address is required"),
+      body("message").trim().notEmpty().withMessage("Please write a message"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { name, email, message } = req.body;
+          const cleanName = name.trim();
+          const cleanEmail = email.trim().toLowerCase();
+          const cleanMessage = message.trim();
 
-        if (!cleanName) {
-          return res.status(400).send({ error: "Your name is required" });
-        }
-        if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-          return res.status(400).send({ error: "A valid email address is required" });
-        }
-        if (!cleanMessage) {
-          return res.status(400).send({ error: "Please write a message" });
-        }
+          const doc = {
+            name: cleanName,
+            email: cleanEmail,
+            message: cleanMessage,
+            status: "unread",
+            replies: [],
+            createdAt: new Date(),
+          };
 
-        const doc = {
-          name: cleanName,
-          email: cleanEmail,
-          message: cleanMessage,
-          status: "unread",
-          replies: [],
-          createdAt: new Date(),
-        };
-
-        const result = await messageCollection.insertOne(doc);
-        res.status(201).send({ ...doc, _id: result.insertedId });
-      } catch (error) {
-        console.error("Error saving message:", error);
-        res.status(500).send({ error: "Failed to send message" });
+          const result = await messageCollection.insertOne(doc);
+          res.status(201).send({ ...doc, _id: result.insertedId });
+        } catch (error) {
+          console.error("Error saving message:", error);
+          res.status(500).send({ error: "Failed to send message" });
+        }
       }
-    });
+    );
 
-    // All messages for the admin dashboard
-    app.get("/massage", async (req, res) => {
+    // All messages for the admin dashboard — admin only
+    app.get("/massage", authenticateUser, requireAdmin, async (req, res) => {
       try {
         const messages = await messageCollection
           .find()
@@ -824,8 +1111,8 @@ app.post("/jwt", (req, res) => {
       }
     });
 
-    // Public feedback: messages the admin has replied to (contact page)
-    app.get("/massage/feedback", async (req, res) => {
+    // Public feedback: messages the admin has replied to (contact page) — admin only
+    app.get("/massage/feedback", authenticateUser, requireAdmin, async (req, res) => {
       try {
         const messages = await messageCollection
           .find({ "replies.0": { $exists: true } })
@@ -839,58 +1126,63 @@ app.post("/jwt", (req, res) => {
     });
 
     // Admin reply to a message (author is always "admin"); marks it read
-    app.patch("/massage/:id", async (req, res) => {
-      try {
-        const { id } = req.params;
-        const text = req.body?.reply?.trim();
+    app.patch(
+      "/massage/:id",
+      authenticateUser,
+      requireAdmin,
+      param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid message id"),
+      body("reply").trim().notEmpty().withMessage("Reply text is required"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
+          const text = req.body.reply.trim();
 
-        if (!ObjectId.isValid(id)) {
-          return res.status(400).send({ error: "Invalid message id" });
+          const reply = {
+            name: "admin",
+            text,
+            createdAt: new Date(),
+          };
+
+          const updated = await messageCollection.findOneAndUpdate(
+            { _id: new ObjectId(id) },
+            { $push: { replies: reply }, $set: { status: "read" } },
+            { returnDocument: "after" }
+          );
+
+          if (!updated) {
+            return res.status(404).send({ error: "Message not found" });
+          }
+
+          res.send({ ...updated, _id: updated._id.toString(), reply });
+        } catch (error) {
+          console.error("Error replying to message:", error);
+          res.status(500).send({ error: "Failed to add reply" });
         }
-        if (!text) {
-          return res.status(400).send({ error: "Reply text is required" });
-        }
-
-        const reply = {
-          name: "admin",
-          text,
-          createdAt: new Date(),
-        };
-
-        const updated = await messageCollection.findOneAndUpdate(
-          { _id: new ObjectId(id) },
-          { $push: { replies: reply }, $set: { status: "read" } },
-          { returnDocument: "after" }
-        );
-
-        if (!updated) {
-          return res.status(404).send({ error: "Message not found" });
-        }
-
-        res.send({ ...updated, _id: updated._id.toString(), reply });
-      } catch (error) {
-        console.error("Error replying to message:", error);
-        res.status(500).send({ error: "Failed to add reply" });
       }
-    });
+    );
 
-    // Delete a message
-    app.delete("/massage/:id", async (req, res) => {
-      try {
-        const { id } = req.params;
-        if (!ObjectId.isValid(id)) {
-          return res.status(400).send({ error: "Invalid message id" });
+    // Delete a message — admin only
+    app.delete(
+      "/massage/:id",
+      authenticateUser,
+      requireAdmin,
+      param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid message id"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
+          const result = await messageCollection.deleteOne({ _id: new ObjectId(id) });
+          if (!result.deletedCount) {
+            return res.status(404).send({ error: "Message not found" });
+          }
+          res.send({ message: "Message deleted successfully" });
+        } catch (error) {
+          console.error("Error deleting message:", error);
+          res.status(500).send({ error: "Failed to delete message" });
         }
-        const result = await messageCollection.deleteOne({ _id: new ObjectId(id) });
-        if (!result.deletedCount) {
-          return res.status(404).send({ error: "Message not found" });
-        }
-        res.send({ message: "Message deleted successfully" });
-      } catch (error) {
-        console.error("Error deleting message:", error);
-        res.status(500).send({ error: "Failed to delete message" });
       }
-    });
+    );
 
     // ----- Blogs -----
 
@@ -980,70 +1272,82 @@ app.post("/jwt", (req, res) => {
       }
     });
 
-    // Update a blog post
-    app.patch("/blogs/:id", async (req, res) => {
-      try {
-        const { id } = req.params;
-        if (!ObjectId.isValid(id)) {
-          return res.status(400).send({ error: "Invalid blog id" });
-        }
+    // Update a blog post (admin only)
+    app.patch(
+      "/blogs/:id",
+      authenticateUser,
+      requireAdmin,
+      param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid blog id"),
+      body("title").optional().trim().notEmpty().withMessage("Blog title cannot be empty"),
+      body("content").optional().trim().notEmpty().withMessage("Blog content cannot be empty"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
 
-        const allowed = ["title", "category", "content", "excerpt", "image"];
-        const update = {};
-        for (const key of allowed) {
-          if (req.body?.[key] !== undefined) {
-            update[key] = String(req.body[key]).trim();
+          const allowed = ["title", "category", "content", "excerpt", "image"];
+          const update = {};
+          for (const key of allowed) {
+            if (req.body?.[key] !== undefined) {
+              update[key] = String(req.body[key]).trim();
+            }
           }
-        }
-        if (update.title !== undefined && !update.title) {
-          return res.status(400).send({ error: "Blog title cannot be empty" });
-        }
-        if (update.content !== undefined && !update.content) {
-          return res.status(400).send({ error: "Blog content cannot be empty" });
-        }
-        if (Object.keys(update).length === 0) {
-          return res.status(400).send({ error: "No fields to update" });
-        }
-        update.updatedAt = new Date();
+          if (update.title !== undefined && !update.title) {
+            return res.status(400).send({ error: "Blog title cannot be empty" });
+          }
+          if (update.content !== undefined && !update.content) {
+            return res.status(400).send({ error: "Blog content cannot be empty" });
+          }
+          if (Object.keys(update).length === 0) {
+            return res.status(400).send({ error: "No fields to update" });
+          }
+          update.updatedAt = new Date();
 
-        const updated = await blogCollection.findOneAndUpdate(
-          { _id: new ObjectId(id) },
-          { $set: update },
-          { returnDocument: "after" }
-        );
+          const updated = await blogCollection.findOneAndUpdate(
+            { _id: new ObjectId(id) },
+            { $set: update },
+            { returnDocument: "after" }
+          );
 
-        if (!updated) {
-          return res.status(404).send({ error: "Blog not found" });
+          if (!updated) {
+            return res.status(404).send({ error: "Blog not found" });
+          }
+
+          res.send(toBlogResponse(updated));
+        } catch (error) {
+          console.error("Error updating blog:", error);
+          res.status(500).send({ error: "Failed to update blog" });
         }
-
-        res.send(toBlogResponse(updated));
-      } catch (error) {
-        console.error("Error updating blog:", error);
-        res.status(500).send({ error: "Failed to update blog" });
       }
-    });
+    );
 
-    // Delete a blog post
-    app.delete("/blogs/:id", async (req, res) => {
-      try {
-        const { id } = req.params;
-        if (!ObjectId.isValid(id)) {
-          return res.status(400).send({ error: "Invalid blog id" });
+    // Delete a blog post (admin only)
+    app.delete(
+      "/blogs/:id",
+      authenticateUser,
+      requireAdmin,
+      param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid blog id"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { id } = req.params;
+          const result = await blogCollection.deleteOne({ _id: new ObjectId(id) });
+          if (!result.deletedCount) {
+            return res.status(404).send({ error: "Blog not found" });
+          }
+          res.send({ message: "Blog deleted successfully" });
+        } catch (error) {
+          console.error("Error deleting blog:", error);
+          res.status(500).send({ error: "Failed to delete blog" });
         }
-        const result = await blogCollection.deleteOne({ _id: new ObjectId(id) });
-        if (!result.deletedCount) {
-          return res.status(404).send({ error: "Blog not found" });
-        }
-        res.send({ message: "Blog deleted successfully" });
-      } catch (error) {
-        console.error("Error deleting blog:", error);
-        res.status(500).send({ error: "Failed to delete blog" });
       }
-    });
+    );
 
     app.post(
       "/blogs/cover",
-      express.raw({ type: "image/*", limit: "5mb" }),
+      authenticateUser,
+      requireAdmin,
+      express.raw({ type: "image/*", limit: "100mb" }),
       async (req, res) => {
         const contentType = (req.get("content-type") || "")
           .split(";")[0]
@@ -1085,48 +1389,348 @@ app.post("/jwt", (req, res) => {
       }
     );
 
-    app.post("/blogs", async (req, res) => {
+    app.post(
+      "/blogs",
+      authenticateUser,
+      requireAdmin,
+      body("title").trim().notEmpty().withMessage("Blog title is required"),
+      body("content").trim().notEmpty().withMessage("Blog content is required"),
+      body("email").isEmail().normalizeEmail().withMessage("A valid email address is required"),
+      body("category").optional().trim().escape(),
+      body("image").optional().trim().escape(),
+      body("excerpt").optional().trim().escape(),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { title, category, image, excerpt, content, email } = req.body;
+          const cleanTitle = title.trim();
+          const bodyText = (content || excerpt || "").trim();
+          const cleanEmail = email.trim().toLowerCase();
+
+          const author = cleanEmail.split("@")[0];
+          const now = new Date();
+          const blog = {
+            title: cleanTitle,
+            category: category?.trim() || "Community",
+            image: image?.trim() || "",
+            excerpt: excerpt?.trim() || bodyText.slice(0, 160),
+            content: bodyText,
+            author,
+            authorEmail: cleanEmail,
+            authorPhotoURL: "",
+            createdAt: now,
+          };
+
+          const result = await blogCollection.insertOne(blog);
+          res.status(201).send(toBlogResponse({ ...blog, _id: result.insertedId }));
+        } catch (error) {
+          console.error("Error adding blog:", error);
+          res.status(500).send({ error: "Failed to add blog" });
+        }
+      }
+    );
+
+    // ----- Admin Chat endpoints -----
+
+    // Create a new chat session (customer)
+    app.post(
+      "/admin/chats",
+      authenticateUser,
+      async (req, res) => {
+        try {
+          const { customerName, customerEmail, status = "active" } = req.body;
+          const user = await db.collection("user").findOne({ uid: req.user.email });
+          const session = {
+            customerName: customerName || "Customer",
+            customerEmail: customerEmail || req.user.email,
+            customerId: req.user.email,
+            status,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          const result = await chatSessionCollection.insertOne(session);
+          res.status(201).send({ ...session, _id: result.insertedId, sessionId: result.insertedId });
+        } catch (error) {
+          console.error("Error creating chat session:", error);
+          res.status(500).send({ error: "Failed to create chat session" });
+        }
+      }
+    );
+
+    // List all chat sessions (admin only) — newest first
+    app.get(
+      "/admin/chats",
+      authenticateUser,
+      requireAdmin,
+      async (req, res) => {
+        try {
+          const sessions = await chatSessionCollection
+            .find()
+            .sort({ updatedAt: -1 })
+            .toArray();
+          res.send(sessions);
+        } catch (error) {
+          console.error("Error fetching chat sessions:", error);
+          res.status(500).send({ error: "Failed to fetch chat sessions" });
+        }
+      }
+    );
+
+    // Get messages for a chat session (admin only)
+    app.get(
+      "/admin/chats/:sessionId/messages",
+      authenticateUser,
+      requireAdmin,
+      param("sessionId").custom((value) => ObjectId.isValid(value)).withMessage("Invalid session id"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { sessionId } = req.params;
+          const messages = await chatMessageCollection
+            .find({ sessionId: new ObjectId(sessionId) })
+            .sort({ createdAt: 1 })
+            .toArray();
+          res.send(messages);
+        } catch (error) {
+          console.error("Error fetching chat messages:", error);
+          res.status(500).send({ error: "Failed to fetch chat messages" });
+        }
+      }
+    );
+
+    // Get messages for a chat session (customer accessible — for history fetch on mount)
+    app.get(
+      "/api/chats/:sessionId/messages",
+      authenticateUser,
+      param("sessionId").custom((value) => ObjectId.isValid(value)).withMessage("Invalid session id"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { sessionId } = req.params;
+          const messages = await chatMessageCollection
+            .find({ sessionId: new ObjectId(sessionId) })
+            .sort({ createdAt: 1 })
+            .limit(50)
+            .toArray();
+          // Sanitize ObjectIds for JSON response
+          const sanitized = messages.map((m) => ({
+            ...m,
+            _id: m._id.toString(),
+            sessionId: m.sessionId.toString(),
+            createdAt: m.createdAt.toISOString(),
+          }));
+          res.send(sanitized);
+        } catch (error) {
+          console.error("Error fetching chat messages:", error);
+          res.status(500).send({ error: "Failed to fetch chat messages" });
+        }
+      }
+    );
+
+    // Send a message to a chat session (customer or admin)
+    app.post(
+      "/admin/chats/:sessionId/messages",
+      authenticateUser,
+      param("sessionId").custom((value) => ObjectId.isValid(value)).withMessage("Invalid session id"),
+      body("text").trim().notEmpty().withMessage("Message text is required"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { sessionId } = req.params;
+          const { text } = req.body;
+          const user = await db.collection("user").findOne({ uid: req.user.email });
+          const senderRole = user?.role === "admin" ? "admin" : "customer";
+          const msg = {
+            sessionId: new ObjectId(sessionId),
+            sender: senderRole === "admin" ? "admin" : "customer",
+            senderName: req.user.email,
+            senderRole,
+            text,
+            createdAt: new Date(),
+            read: false,
+          };
+          const result = await chatMessageCollection.insertOne(msg);
+          msg._id = result.insertedId;
+
+          await chatSessionCollection.findOneAndUpdate(
+            { _id: new ObjectId(sessionId) },
+            { $set: { updatedAt: new Date() } }
+          );
+
+          // Broadcast via Socket.io if available
+          const io = app.io;
+          if (io) {
+            io.to(`session:${sessionId}`).emit("chat:message", msg);
+          }
+
+          res.status(201).send(msg);
+        } catch (error) {
+          console.error("Error sending chat message:", error);
+          res.status(500).send({ error: "Failed to send message" });
+        }
+      }
+    );
+
+    // Mark a chat session as resolved (admin only)
+    app.patch(
+      "/admin/chats/:sessionId/resolve",
+      authenticateUser,
+      requireAdmin,
+      param("sessionId").custom((value) => ObjectId.isValid(value)).withMessage("Invalid session id"),
+      handleValidationErrors,
+      async (req, res) => {
+        try {
+          const { sessionId } = req.params;
+          const result = await chatSessionCollection.findOneAndUpdate(
+            { _id: new ObjectId(sessionId) },
+            { $set: { status: "resolved", updatedAt: new Date() } },
+            { returnDocument: "after" }
+          );
+          if (!result) {
+            return res.status(404).send({ error: "Chat session not found" });
+          }
+          res.send({ message: "Chat resolved", session: result });
+        } catch (error) {
+          console.error("Error resolving chat:", error);
+          res.status(500).send({ error: "Failed to resolve chat" });
+        }
+      }
+    );
+
+    // ----- Socket.io real-time chat server -----
+    const server = http.createServer(app);
+    const io = new Server(server, {
+      cors: {
+        origin: (origin, callback) => {
+          if (!origin) return callback(null, true);
+          if (ALLOWED_ORIGINS.includes(origin)) {
+            return callback(null, origin);
+          }
+          return callback(new Error("Not allowed by CORS policy"));
+        },
+        credentials: true,
+      },
+    });
+
+    // Socket.io auth middleware — verify JWT from query token
+    io.use((socket, next) => {
+      const token = socket.handshake.auth.token || socket.handshake.query.token;
+      if (!token) {
+        return next(new Error("Authentication required"));
+      }
       try {
-        const { title, category, image, excerpt, content, email } = req.body;
-        const cleanTitle = title?.trim();
-        const body = (content || excerpt || "").trim();
-        const cleanEmail = email?.trim().toLowerCase();
-
-        if (!cleanTitle) {
-          return res.status(400).send({ error: "Blog title is required" });
-        }
-        if (!body) {
-          return res.status(400).send({ error: "Blog content is required" });
-        }
-        if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-          return res.status(400).send({ error: "A valid email address is required" });
-        }
-
-        const author = cleanEmail.split("@")[0];
-        const now = new Date();
-        const blog = {
-          title: cleanTitle,
-          category: category?.trim() || "Community",
-          image: image?.trim() || "",
-          excerpt: excerpt?.trim() || body.slice(0, 160),
-          content: body,
-          author,
-          authorEmail: cleanEmail,
-          authorPhotoURL: "",
-          createdAt: now,
-        };
-
-        const result = await blogCollection.insertOne(blog);
-        res.status(201).send(toBlogResponse({ ...blog, _id: result.insertedId }));
-      } catch (error) {
-        console.error("Error adding blog:", error);
-        res.status(500).send({ error: "Failed to add blog" });
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
+        socket.userId = decoded.uid || decoded.userId || decoded.email;
+        socket.userRole = decoded.role || "customer";
+        socket.userEmail = decoded.email;
+        next();
+      } catch (err) {
+        return next(new Error("Invalid token"));
       }
     });
 
-    app.listen(port, () => {
-      console.log(`Server running on port ${port}`);
+    io.on("connection", (socket) => {
+      console.log("Socket connected:", socket.id, "role:", socket.userRole);
+
+      // Customer joins their chat session
+      socket.on("join:customer", async ({ sessionId }) => {
+        try {
+          socket.join(`session:${sessionId}`);
+          socket.sessionId = sessionId;
+          const messages = await chatMessageCollection
+            .find({ sessionId: new ObjectId(sessionId) })
+            .sort({ createdAt: 1 })
+            .limit(50)
+            .toArray();
+          // Sanitize ObjectIds for socket emission (frontend expects strings)
+          const sanitized = messages.map((m) => ({
+            ...m,
+            _id: m._id.toString(),
+            sessionId: m.sessionId.toString(),
+            createdAt: m.createdAt.toISOString(),
+          }));
+          socket.emit("chat:history", sanitized);
+        } catch (error) {
+          console.error("Error joining customer chat:", error);
+          socket.emit("chat:error", { message: "Failed to load chat history" });
+        }
+      });
+
+      // Admin joins a chat session
+      socket.on("join:admin", ({ sessionId }) => {
+        if (socket.userRole !== "admin") {
+          socket.emit("chat:error", { message: "Admin access required" });
+          return;
+        }
+        socket.join(`session:${sessionId}`);
+        socket.sessionId = sessionId;
+        socket.emit("chat:joined", { sessionId, role: "admin" });
+      });
+
+      // Send a message
+      socket.on("chat:send", async ({ sessionId, text, sender, senderName, senderRole }) => {
+        try {
+          const msg = {
+            sessionId: new ObjectId(sessionId),
+            sender,
+            senderName,
+            senderRole,
+            text,
+            createdAt: new Date(),
+            read: false,
+          };
+          const result = await chatMessageCollection.insertOne(msg);
+          msg._id = result.insertedId;
+
+          await chatSessionCollection.findOneAndUpdate(
+            { _id: new ObjectId(sessionId) },
+            { $set: { updatedAt: new Date() } }
+          );
+
+          // Sanitize ObjectId/Date for socket emission (frontend expects strings)
+          const emitMsg = {
+            _id: msg._id.toString(),
+            sessionId: msg.sessionId.toString(),
+            sender: msg.sender,
+            senderName: msg.senderName,
+            senderRole: msg.senderRole,
+            text: msg.text,
+            createdAt: msg.createdAt.toISOString(),
+            read: msg.read,
+          };
+          io.to(`session:${sessionId}`).emit("chat:message", emitMsg);
+        } catch (error) {
+          console.error("Error sending chat message:", error);
+          socket.emit("chat:error", { message: "Failed to send message" });
+        }
+      });
+
+      // Mark messages as read
+      socket.on("chat:read", async ({ sessionId }) => {
+        try {
+          await chatMessageCollection.updateMany(
+            { sessionId: new ObjectId(sessionId), read: false },
+            { $set: { read: true } }
+          );
+          io.to(`session:${sessionId}`).emit("chat:read", { sessionId });
+        } catch (error) {
+          console.error("Error marking messages read:", error);
+        }
+      });
+
+      // Typing indicator
+      socket.on("chat:typing", ({ sessionId, isTyping, senderName }) => {
+        socket.to(`session:${sessionId}`).emit("chat:typing", { isTyping, senderName });
+      });
+
+      socket.on("disconnect", () => {
+        console.log("Socket disconnected:", socket.id);
+      });
     });
+
+    // Expose server and io on the app for module-level listen
+    app.server = server;
+    app.io = io;
   } catch (error) {
     console.error("MongoDB connection failed:", error);
     throw error;
@@ -1152,7 +1756,7 @@ const getApp = async () => {
 if (require.main === module) {
   getApp()
     .then((application) => {
-      application.listen(port, () => {
+      application.server.listen(port, () => {
         console.log(`Server running on port ${port}`);
       });
     })

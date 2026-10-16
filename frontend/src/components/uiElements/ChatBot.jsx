@@ -1,258 +1,292 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
-  ChatBubbleOvalLeftEllipsisIcon,
-  FaceSmileIcon,
   PaperAirplaneIcon,
-  SparklesIcon,
+  UserCircleIcon,
   XMarkIcon,
 } from "@heroicons/react/24/solid";
-import { useGetProductsQuery } from "../../redux/api/productsApi/productsApi";
-import { useGetSettingsQuery } from "../../redux/api/settingsApi/settingsApi";
+import { io } from "socket.io-client";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  setMessages,
+  setAdminMessages,
+  addMessage,
+  addAdminMessage,
+  setChatSessionId,
+  setSendError,
+  setIsAdminOnline,
+  setIsAdminTyping,
+  clearCustomerChat,
+  setInput,
+} from "../../redux/features/chatSlice/chatSlice";
+import { useGetMessagesQuery } from "../../redux/api/chatApi/chatApi";
 
-const STORAGE_KEY = "chatbot-history";
-const MAX_HISTORY = 50;
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
 
-const currency = (value) =>
-  `৳${Number(value || 0).toLocaleString("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  })}`;
-
-const SUGGESTIONS = [
-  "Show me coffee beans",
-  "Delivery charges?",
-  "How can I pay?",
-  "Best sellers?",
-  "Where is my order?",
-];
-
-const QUICK_LINKS = [
-  { label: "Shop", to: "/shop" },
-  { label: "Contact", to: "/contact" },
-  { label: "My orders", to: "/profile" },
-];
-
-const loadHistory = () => {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return Array.isArray(saved) ? saved : [];
-  } catch {
-    return [];
-  }
-};
-
-const saveHistory = (messages) => {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(messages.slice(-MAX_HISTORY))
-    );
-  } catch {
-    // storage unavailable — chat simply will not persist
-  }
-};
-
-const now = () => new Date().toISOString();
-
-const message = (sender, text, extra = {}) => ({
-  id: `${sender}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-  sender,
-  text,
-  time: now(),
-  ...extra,
+const formatTime = new Intl.DateTimeFormat("en-US", {
+  hour: "numeric",
+  minute: "2-digit",
 });
 
-const has = (text, words) => words.some((word) => text.includes(word));
-
-const buildReply = (rawText, { products, settings }) => {
-  const text = ` ${rawText.toLowerCase().replace(/[?!.,]+/g, " ").trim()} `;
-  const name = settings?.storeName || "Coffee Mern";
-
-  const findProducts = (terms) =>
-    products.filter((product) =>
-      terms.some((term) => product.name?.toLowerCase().includes(term))
-    );
-
-  const priceOf = (term) => {
-    const match = products.find((product) =>
-      product.name?.toLowerCase().includes(term)
-    );
-    return match ? `${match.name} — ${currency(match.price)}` : null;
-  };
-
-  const topRated = [...products]
-    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-    .slice(0, 3);
-
-  // Greetings
-  if (has(text, ["hi", "hello", "hey", "salam", "assalam", "good morning", "good evening"]) && text.trim().length <= 22) {
-    return `Hello! Welcome to ${name}. I can help you find products, prices, delivery details and more. What are you looking for?`;
-  }
-
-  // Thanks / bye
-  if (has(text, ["thank", "thanks", "thank you"])) {
-    return "You're welcome! Let me know if you need anything else. Enjoy your coffee!";
-  }
-  if (has(text, ["bye", "good bye", "see you"])) {
-    return "Goodbye! Your next cup is waiting. See you soon.";
-  }
-
-  // Delivery / shipping
-  if (has(text, ["delivery", "deliver", "shipping", "ship", "courier", "how long"])) {
-    const prices = settings?.deliveryPrices || {};
-    return `We offer three options:\n• Standard Delivery — ${currency(
-      prices.standard ?? 60
-    )} (3-5 business days)\n• Express Delivery — ${currency(
-      prices.express ?? 150
-    )} (1-2 business days)\n• Store Pickup — ${
-      (prices.pickup ?? 0) === 0 ? "Free" : currency(prices.pickup)
-    } (ready in 2 hours)\n\nYou pick one at checkout.`;
-  }
-
-  // Payment
-  if (has(text, ["pay", "payment", "card", "bkash", "nagad", "cash", "cod"])) {
-    return "You can pay by Credit / Debit Card or Cash on Delivery. Card details are only used for the transaction — we store just the brand and last 4 digits with your order.";
-  }
-
-  // Order status
-  if (has(text, ["order status", "my order", "track", "where is my order", "order details"])) {
-    return "All your orders live under My Profile → My Orders, where you can see the status (pending, accepted, on process, delivered) with full details. Once accepted, we send it out for delivery and then mark it delivered.";
-  }
-
-  // Wishlist
-  if (has(text, ["wishlist", "wish list", "favourite", "favorite", "saved"])) {
-    return "Tap the heart on any product to save it. Your wishlist lives in My Profile → Wishlist, and you can move items to the cart from there.";
-  }
-
-  // Cart
-  if (has(text, ["cart", "basket"])) {
-    return "You can open the cart anytime from the bag icon in the top menu. Adjust quantities, remove items, then hit Checkout.";
-  }
-
-  // Returns / support
-  if (has(text, ["return", "refund", "replace", "problem", "issue"])) {
-    return "Sorry about that! Please share the details on our Contact page and our team will get back to you — or email us and we will sort it out quickly.";
-  }
-
-  // Contact / hours
-  if (has(text, ["contact", "email", "phone", "call", "support", "open", "hours"])) {
-    return `You can reach us on the Contact page${
-      settings?.supportEmail ? ` or at ${settings.supportEmail}` : ""
-    }${settings?.phone ? ` / ${settings.phone}` : ""}. We reply to every message.`;
-  }
-
-  // Recommendations
-  if (has(text, ["best", "recommend", "popular", "top", "suggestion", "what should"])) {
-    if (topRated.length === 0) return "Our catalogue is brand new — check the Shop page for everything we offer!";
-    return `Customer favourites right now:\n${topRated
-      .map((p, index) => `${index + 1}. ${p.name} — ${currency(p.price)}`)
-      .join("\n")}\n\nSee the full list in the Shop.`;
-  }
-
-  // Price question
-  if (has(text, ["price", "cost", "how much", "rate"])) {
-    const words = text.split(" ").filter((word) => word.length > 3);
-    for (const word of words) {
-      const match = priceOf(word);
-      if (match) return `${match} — you can order it from the product page.`;
-    }
-    return "Tell me the product name and I will check the price for you.";
-  }
-
-  // Product search
-  if (has(text, ["show", "find", "search", "looking for", "do you have", "have any", "latte", "coffee", "espresso", "tea", "beans", "machine", "grinder"])) {
-    const words = text.split(" ").filter((word) => word.length > 3);
-    const stopWords = ["show", "find", "search", "looking", "have", "want", "need", "please", "some", "with"];
-    const terms = words.filter((word) => !stopWords.includes(word));
-    const matches = (terms.length ? findProducts(terms) : products).slice(0, 3);
-
-    if (matches.length === 0) {
-      return `I could not find that in our catalogue. Popular picks: ${topRated
-        .slice(0, 2)
-        .map((p) => p.name)
-        .join(", ")}. Ask me for something else!`;
-    }
-
-    return `Here is what I found:\n${matches
-      .map((p) => `• ${p.name} — ${currency(p.price)}`)
-      .join("\n")}\n\nOpen the Shop to see all ${products.length} products.`;
-  }
-
-  // Fallback
-  return `I am the ${name} assistant. You can ask me about products, prices, delivery charges, payment options, or your orders — or pick one of the suggestions below.`;
+const safeFormatTime = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? "" : formatTime.format(date);
 };
 
 const ChatBot = () => {
-  const { data: products = [] } = useGetProductsQuery();
-  const { data: settings } = useGetSettingsQuery();
+  const dispatch = useDispatch();
+  const token = localStorage.getItem("access-token");
+
+  const input = useSelector((state) => state.chat.input);
+  const messages = useSelector((state) => state.chat.messages);
+  const adminMessages = useSelector((state) => state.chat.adminMessages);
+  const sendError = useSelector((state) => state.chat.sendError);
+  const chatSessionId = useSelector((state) => state.chat.chatSessionId);
+  const isAdminTyping = useSelector((state) => state.chat.isAdminTyping);
+  const isAdminOnline = useSelector((state) => state.chat.isAdminOnline);
 
   const [open, setOpen] = useState(false);
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState(() => {
-    const history = loadHistory();
-    return history.length > 0
-      ? history
-      : [
-          message(
-            "bot",
-            "Hi there! I am your Coffee Mern assistant. Ask me about products, prices, delivery or your orders."
-          ),
-        ];
-  });
-  const [isTyping, setIsTyping] = useState(false);
+  const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+
+  const socketRef = useRef(null);
+  const adminMessagesEndRef = useRef(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const chatSessionIdRef = useRef(chatSessionId);
+  useEffect(() => {
+    chatSessionIdRef.current = chatSessionId;
+  }, [chatSessionId]);
+
+  const { data: historyData } = useGetMessagesQuery(chatSessionId, {
+    skip: !chatSessionId,
+  });
 
   useEffect(() => {
-    saveHistory(messages);
-  }, [messages]);
+    if (!historyData || !Array.isArray(historyData)) return;
+    dispatch(
+      setMessages(
+        historyData.filter(
+          (m) => m.sender === "customer" || m.sender === "user"
+        )
+      )
+    );
+    dispatch(
+      setAdminMessages(historyData.filter((m) => m.sender === "admin"))
+    );
+  }, [historyData, dispatch]);
+
+  const handleDragStart = (event) => {
+    setIsDragging(true);
+  };
+  const handleDragMove = (event) => {
+    if (!isDragging) return;
+    setDragPos({ x: event.clientX - 160, y: event.clientY - 20 });
+  };
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleDragMove);
+    window.addEventListener("mouseup", handleDragEnd);
+    return () => {
+      window.removeEventListener("mousemove", handleDragMove);
+      window.removeEventListener("mouseup", handleDragEnd);
+    };
+  }, [isDragging]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const createChatSession = async () => {
+      try {
+        const listRes = await fetch(`${API_BASE}/admin/chats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (listRes.status === 401) {
+          localStorage.removeItem("access-token");
+          window.location.href = "/login";
+          return;
+        }
+        let sessionId = null;
+        if (listRes.ok) {
+          const chats = await listRes.json();
+          const existing = chats.find(
+            (c) =>
+              c.customerEmail === localStorage.getItem("userEmail") ||
+              c.customer_email === localStorage.getItem("userEmail") ||
+              c.email === localStorage.getItem("userEmail")
+          );
+          if (existing) {
+            sessionId = existing._id || existing.id || existing.sessionId;
+          }
+        }
+        if (!sessionId) {
+          const res = await fetch(`${API_BASE}/admin/chats`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              customerName: "Customer",
+              customerEmail: localStorage.getItem("userEmail") || "",
+              status: "active",
+            }),
+          });
+          if (!res.ok) throw new Error("Failed to create chat session");
+          const data = await res.json();
+          sessionId = data._id || data.id || data.sessionId;
+        }
+        if (!sessionId) throw new Error("Invalid session id received from server");
+        let sid = sessionId;
+        if (sid && typeof sid === "object" && sid.$oid) sid = sid.$oid;
+        if (typeof sid === "string" && /^[0-9a-fA-F]{24}$/.test(sid)) {
+          dispatch(setChatSessionId(sid));
+          return sid;
+        }
+        throw new Error("Invalid session id received from server");
+      } catch (error) {
+        console.error("Error creating chat session:", error);
+        dispatch(setSendError("Unable to start chat session. Please try again."));
+        return null;
+      }
+    };
+
+    const init = async () => {
+      const sessionId = await createChatSession();
+      if (!sessionId) return;
+      dispatch(setChatSessionId(sessionId));
+
+      const socket = io(SOCKET_URL, {
+        auth: { token },
+        transports: ["websocket", "polling"],
+      });
+      socketRef.current = socket;
+
+      socket.on("connect", () => {
+        console.log("Socket connected:", socket.id);
+        if (sessionId) {
+          socket.emit("join:customer", { sessionId });
+        }
+      });
+
+      socket.on("disconnect", () => {
+        console.log("Socket disconnected");
+      });
+
+      socket.on("connect_error", (err) => {
+        console.error("Socket connect error:", err.message);
+      });
+
+      socket.on("admin:online", () => {
+        dispatch(setIsAdminOnline(true));
+      });
+
+      socket.on("admin:offline", () => {
+        dispatch(setIsAdminOnline(false));
+      });
+
+      socket.on("chat:history", (msgs) => {
+        const history = msgs || [];
+        dispatch(
+          setMessages(
+            history.filter(
+              (m) => m.sender === "customer" || m.sender === "user"
+            )
+          )
+        );
+        dispatch(
+          setAdminMessages(history.filter((m) => m.sender === "admin"))
+        );
+      });
+
+      socket.on("chat:message", (msg) => {
+        if (msg.sessionId !== chatSessionIdRef.current) return;
+        if (msg.sender === "customer") {
+          dispatch(addMessage(msg));
+        } else if (msg.sender === "admin") {
+          dispatch(addAdminMessage(msg));
+        }
+      });
+
+      socket.on("chat:typing", ({ isTyping: typing, senderName }) => {
+        dispatch(setIsAdminTyping(typing));
+      });
+
+      socket.on("chat:error", ({ message }) => {
+        console.error("Chat error:", message);
+        dispatch(setSendError(message));
+      });
+    };
+
+    init();
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [token, dispatch]);
 
   useEffect(() => {
     if (open && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  }, [messages, isTyping, open]);
+  }, [messages, open]);
 
-  const send = (text) => {
+  const sendUserMessage = (text) => {
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    setMessages((current) => [...current, message("user", trimmed)]);
-    setInput("");
-    setIsTyping(true);
+    const userEmail = localStorage.getItem("userEmail") || "Customer";
+    const socket = socketRef.current;
+    if (!socket || !socket.connected) {
+      dispatch(setSendError("Not connected to chat server. Please try again."));
+      return;
+    }
 
-    const reply = buildReply(trimmed, { products, settings });
-    const delay = Math.min(1200, 450 + reply.length * 4);
-
-    window.setTimeout(() => {
-      setMessages((current) => [...current, message("bot", reply)]);
-      setIsTyping(false);
-    }, delay);
+    socket.emit("chat:send", {
+      sessionId: chatSessionId,
+      text: trimmed,
+      sender: "customer",
+      senderName: userEmail,
+      senderRole: "customer",
+    });
+    dispatch(setInput(""));
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    send(input);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!token) {
+      dispatch(setSendError("Please log in to chat"));
+      return;
+    }
+    if (!chatSessionId) {
+      dispatch(setSendError("No active chat session. Please try again."));
+      return;
+    }
+    sendUserMessage(input);
   };
 
   const clearChat = () => {
-    setMessages([
-      message(
-        "bot",
-        "Chat cleared. How can I help you with your coffee today?"
-      ),
-    ]);
+    dispatch(clearCustomerChat());
   };
 
-  const formattedTime = useMemo(
-    () =>
-      new Intl.DateTimeFormat("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      }),
-    []
-  );
+  if (!token) {
+    return (
+      <div className="fixed bottom-4 right-4 w-80 bg-white border border-neutral-200 rounded-lg shadow-lg p-4 text-sm text-neutral-600">
+        <p className="font-medium text-neutral-900 mb-2">Please log in to chat</p>
+        <p className="text-neutral-500">
+          You need to be logged in to start a conversation with our support team.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -264,30 +298,50 @@ const ChatBot = () => {
             setOpen(true);
             setTimeout(() => inputRef.current?.focus(), 50);
           }}
-          aria-label="Open chat assistant"
-          className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-[#1d1d1d] py-3.5 pl-4 pr-5 text-sm font-semibold text-white shadow-xl shadow-black/20 transition hover:scale-105 hover:bg-[#e11d48]"
+          aria-label="Open support chat"
+          onMouseDown={handleDragStart}
+          style={{
+            position: "fixed",
+            top: dragPos.y || window.innerHeight - 100,
+            left: dragPos.x || window.innerWidth - 200,
+            zIndex: 40,
+            cursor: isDragging ? "grabbing" : "grab",
+          }}
+          className="flex items-center gap-2 rounded-full bg-[#1d1d1d] py-3.5 pl-4 pr-5 text-sm font-semibold text-white shadow-xl shadow-black/20 transition hover:scale-105 hover:bg-[#e11d48]"
         >
-          <ChatBubbleOvalLeftEllipsisIcon className="h-6 w-6" />
-          <span className="hidden sm:inline">Ask us anything</span>
+          <UserCircleIcon className="h-6 w-6" />
+          <span className="hidden sm:inline">Support Chat</span>
         </button>
       )}
 
       {/* Chat panel */}
       {open && (
         <section
-          aria-label="Chat assistant"
-          className="fixed bottom-5 right-5 z-40 flex h-[min(560px,calc(100vh-2.5rem))] w-[min(380px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-3xl border border-black/5 bg-white shadow-2xl shadow-black/25"
+          aria-label="Support chat"
+          style={{
+            position: "fixed",
+            top: dragPos.y || window.innerHeight - 600,
+            left: dragPos.x || window.innerWidth - 400,
+            zIndex: 40,
+          }}
+          className="flex h-[min(560px,calc(100vh-2.5rem))] w-[min(380px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-3xl border border-black/5 bg-white shadow-2xl shadow-black/25"
         >
           {/* Header */}
-          <header className="flex items-center gap-3 bg-[#1d1d1d] px-5 py-4 text-white">
+          <header
+            className="flex items-center gap-3 bg-[#1d1d1d] px-5 py-4 text-white"
+            onMouseDown={handleDragStart}
+            style={{ cursor: isDragging ? "grabbing" : "grab" }}
+          >
             <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-[#e11d48]">
-              <SparklesIcon className="h-5 w-5" />
+              <UserCircleIcon className="h-5 w-5" />
             </span>
             <div className="flex-1">
-              <p className="text-sm font-bold leading-tight">Coffee Assistant</p>
+              <p className="text-sm font-bold leading-tight">Support Chat</p>
               <p className="flex items-center gap-1.5 text-[11px] text-white/70">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-                Online — replies instantly
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${isAdminOnline ? "bg-green-400" : "bg-neutral-500"}`}
+                />
+                {isAdminOnline ? "Admin online" : "Admin offline"}
               </p>
             </div>
             <button
@@ -312,11 +366,11 @@ const ChatBot = () => {
             {messages.map((item) => (
               <div
                 key={item.id}
-                className={`flex ${item.sender === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex ${item.sender === "user" || item.sender === "customer" ? "justify-end" : "justify-start"}`}
               >
                 <div
                   className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ${
-                    item.sender === "user"
+                    item.sender === "user" || item.sender === "customer"
                       ? "rounded-br-md bg-[#e11d48] text-white"
                       : "rounded-bl-md bg-white text-[#1d1d1d]"
                   }`}
@@ -324,58 +378,40 @@ const ChatBot = () => {
                   <p className="whitespace-pre-line">{item.text}</p>
                   <p
                     className={`mt-1 text-[10px] ${
-                      item.sender === "user" ? "text-white/70" : "text-neutral-400"
+                      item.sender === "user" || item.sender === "customer"
+                        ? "text-white/70"
+                        : "text-neutral-400"
                     }`}
                   >
-                    {formattedTime.format(new Date(item.time))}
+                    {safeFormatTime(item.time)}
                   </p>
                 </div>
               </div>
             ))}
-
-            {isTyping && (
+            {adminMessages.map((item) => (
+              <div key={item.id} className="flex justify-start">
+                <div className="max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm rounded-bl-md bg-white text-[#1d1d1d]">
+                  <p className="whitespace-pre-line">{item.text}</p>
+                  <p className="mt-1 text-[10px] text-neutral-400">
+                    {safeFormatTime(item.createdAt || item.time)}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {isAdminTyping && (
               <div className="flex justify-start">
-                <div className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-white px-4 py-3 shadow-sm">
-                  {[0, 1, 2].map((dot) => (
-                    <span
-                      key={dot}
-                      className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-400"
-                      style={{ animationDelay: `${dot * 120}ms` }}
-                    />
-                  ))}
+                <div className="max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm rounded-bl-md bg-white text-[#1d1d1d]">
+                  <p className="text-neutral-400">Admin is typing…</p>
                 </div>
               </div>
             )}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Suggestions */}
-          <div className="flex flex-wrap gap-1.5 border-t border-black/5 bg-white px-4 pt-3">
-            {SUGGESTIONS.map((suggestion) => (
-              <button
-                key={suggestion}
-                type="button"
-                onClick={() => send(suggestion)}
-                className="rounded-full border border-black/10 px-3 py-1.5 text-[11px] font-medium text-neutral-600 transition hover:border-[#e11d48] hover:text-[#e11d48]"
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-
-          {/* Quick links */}
-          <div className="flex items-center gap-3 bg-white px-4 pb-2 pt-2 text-[11px]">
-            {QUICK_LINKS.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                onClick={() => setOpen(false)}
-                className="font-semibold text-neutral-400 transition hover:text-[#e11d48]"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {sendError && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm rounded-bl-md bg-red-50 text-red-700 border border-red-100">
+                  <p>{sendError}</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Input */}
@@ -383,20 +419,21 @@ const ChatBot = () => {
             onSubmit={handleSubmit}
             className="flex items-center gap-2 border-t border-black/5 bg-white px-4 py-3"
           >
-            <FaceSmileIcon className="h-5 w-5 flex-shrink-0 text-neutral-300" />
+            <UserCircleIcon className="h-5 w-5 flex-shrink-0 text-neutral-300" />
             <input
               ref={inputRef}
               type="text"
               value={input}
-              onChange={(event) => setInput(event.target.value)}
-              placeholder="Type your message…"
+              onChange={(event) => dispatch(setInput(event.target.value))}
+              placeholder="Type your message to support…"
               className="w-full bg-transparent text-sm text-[#1d1d1d] outline-none placeholder:text-neutral-400"
+              autoFocus
             />
             <button
               type="submit"
-              disabled={!input.trim()}
+              disabled={!input.trim() || !chatSessionId}
               aria-label="Send message"
-              className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-[#e11d48] text-white transition hover:bg-[#c81a40] disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-400"
+              className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full transition disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-400 bg-[#e11d48] text-white hover:bg-[#c81a40]"
             >
               <PaperAirplaneIcon className="h-4 w-4" />
             </button>

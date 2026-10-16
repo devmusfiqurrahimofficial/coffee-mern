@@ -7,7 +7,7 @@ import {
 import { bdtToUsd, formatBdt } from "../../../utils/currency";
 
 const CATEGORIES = ["Coffee", "Equipment", "Food", "Tea", "Accessories"];
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 100 * 1024 * 1024; // 100 MB
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 const initialForm = (product) =>
@@ -60,7 +60,7 @@ const EditProductModal = ({ product, onClose, onSaved }) => {
       return;
     }
     if (file.size > MAX_IMAGE_SIZE) {
-      setError("Product images must be 5 MB or smaller.");
+      setError("Product images must be 100 MB or smaller.");
       event.target.value = "";
       return;
     }

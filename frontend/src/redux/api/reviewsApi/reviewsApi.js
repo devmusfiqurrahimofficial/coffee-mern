@@ -3,7 +3,16 @@ import { API_BASE_URL } from "../../../utils/apiConfig";
 
 export const reviewsApi = createApi({
   reducerPath: "reviewsApi",
-  baseQuery: fetchBaseQuery({ baseUrl: `${API_BASE_URL}/` }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: `${API_BASE_URL}/`,
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("access-token");
+      if (token) {
+        headers.set("authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
   tagTypes: ["Reviews"],
   endpoints: (build) => ({
     // Get all reviews across all products (admin dashboard)
