@@ -12,9 +12,8 @@ import {
   resetUnreadCount,
 } from "../../../redux/features/chatSlice/chatSlice";
 import { useGetChatsQuery, useGetMessagesQuery } from "../../../redux/api/chatApi/chatApi";
-
-const API_BASE = import.meta.env.VITE_API_BASE || "https://coffee-mern.onrender.com";
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://coffee-mern.onrender.com";
+import { API_BASE_URL as API_BASE } from "../../../utils/apiConfig";
+import { API_BASE_URL as SOCKET_URL } from "../../../utils/apiConfig";
 
 const formatTime = (iso) => {
   if (!iso) return "";
@@ -81,7 +80,6 @@ const AdminChat = () => {
     });
     socketRef.current = socket;
     socket.on("connect", () => {
-      console.log("Admin socket connected:", socket.id);
       if (selectedSessionRef.current) {
         socket.emit("join:admin", { sessionId: selectedSessionRef.current });
       }
@@ -100,7 +98,9 @@ const AdminChat = () => {
         dispatch(resetUnreadCount());
       }
     });
-    socket.on("chat:error", ({ message }) => console.error("Chat error:", message));
+    socket.on("chat:error", () => {
+      dispatch(setSendError("Chat unavailable. Please try again."));
+    });
     return () => {
       socket.disconnect();
       socketRef.current = null;

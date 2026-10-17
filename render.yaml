@@ -11,12 +11,18 @@ services:
     startCommand: npm start
     healthCheckPath: /health
     envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_ORIGIN
+        value: https://coffee-mern.netlify.app
       # Set these values in the Render dashboard when creating the service.
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
         sync: false
       - key: BASE_URL
+        sync: false
+      - key: ADMIN_EMAILS
         sync: false
       - key: NODE_VERSION
         value: "22"

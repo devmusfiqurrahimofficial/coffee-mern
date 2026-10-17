@@ -12,11 +12,14 @@ const baseQuery = fetchBaseQuery({
   },
 });
 
-// Clear a stale/invalid JWT and send the user to login on 401 so the
-// frontend does not fail silently when the backend token is missing/expired.
+// Only redirect to login for protected reads (order history). Placing an
+// order is public (guest checkout), so a 401 there must surface as an error
+// instead of wiping the cart via redirect.
 const baseQueryWithAuthHandling = async (args, api, extraOptions) => {
   const result = await baseQuery(args, api, extraOptions);
-  if (result.error && result.error.status === 401) {
+  const url = typeof args === "string" ? args : args?.url || "";
+  const isPlaceOrder = url === "orders";
+  if (result.error && result.error.status === 401 && !isPlaceOrder) {
     localStorage.removeItem("access-token");
     if (window.location.pathname !== "/login") {
       window.location.href = "/login";

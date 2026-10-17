@@ -14,11 +14,14 @@ export const userApi = createApi({
     },
   }),
   endpoints: (build) => ({
+    // Exchanges a Firebase ID token (proves account ownership) for our short
+    // backend JWT. Never accepts a raw email — that would let anyone mint
+    // tokens (incl. admin) for any address.
     generateJWT: build.mutation({
-      query: (email) => ({
+      query: (idToken) => ({
         url: "jwt",
         method: "POST",
-        body: { email },
+        body: { idToken },
       }),
     }),
   }),

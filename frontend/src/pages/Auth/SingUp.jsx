@@ -46,7 +46,6 @@ const SingUp = () => {
       navigate("/");
     })
     .catch((error) => {
-      console.error("Sign up error:", error);
       setMessage({ type: "error", text: getErrorText(error) });
       setLoading(false);
     });

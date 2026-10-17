@@ -73,13 +73,11 @@ const AdminLogin = () => {
         return;
       }
 
-      const { token } = await generateJWT(credential.user.email).unwrap();
+      const { token } = await generateJWT(await credential.user.getIdToken()).unwrap();
       localStorage.setItem("access-token", token);
-      console.log("Admin signed in successfully, JWT stored:", token);
 
       navigate(returnTo, { replace: true });
     } catch (error) {
-      console.error("Admin sign in error:", error);
       setMessage({ type: "error", text: getErrorText(error) });
     } finally {
       setLoading(false);

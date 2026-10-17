@@ -6,14 +6,17 @@ import { getStorage } from "firebase/storage";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
+// Firebase config comes from environment variables (Vite exposes only
+// VITE_* keys). No secrets live in source — see frontend/.env.example.
+// Firebase API keys are public identifiers; access is enforced by Firebase
+// Security Rules + backend JWT checks, never by hiding the key.
 const firebaseConfig = {
-  apiKey: "AIzaSyBPcfxMvl8HS4nRqHwCPAcnNdZI9nDVU4I",
-  authDomain: "coffee-mern.firebaseapp.com",
-  projectId: "coffee-mern",
-  storageBucket: "coffee-mern.firebasestorage.app",
-  messagingSenderId: "601893925017",
-  appId: "1:601893925017:web:ad9b6e9f21939e34c30808"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase

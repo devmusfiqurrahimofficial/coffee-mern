@@ -1,9 +1,17 @@
 node_modules
 
-# Secrets — never commit
+# Secrets — never commit (covers root, backend/, frontend/ .env files)
 .env
 .env.local
 .env.*.local
+backend/.env
+frontend/.env
+
+# Service-account keys / certs — never commit
+*.pem
+*.key
+serviceAccount*.json
+*-key.json
 
 # Tooling / build artifacts
 .kilo/

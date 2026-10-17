@@ -406,16 +406,33 @@ const CheckoutPage = () => {
     };
 
     try {
-      const response = await placeOrder(order).unwrap();
+      // Render free tier sleeps — the first request after idle can drop the
+      // socket while the service wakes up, so retry once on network failure.
+      let response;
+      try {
+        response = await placeOrder(order).unwrap();
+      } catch (firstError) {
+        if (firstError?.status === "FETCH_ERROR") {
+          await new Promise((resolve) => setTimeout(resolve, 2500));
+          response = await placeOrder(order).unwrap();
+        } else {
+          throw firstError;
+        }
+      }
       setPlacedOrder(response);
       setStep(3);
       dispatch(clearCart());
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
-      console.error("Failed to place order:", error);
+      const validationMessage = Array.isArray(error?.data?.errors)
+        ? error.data.errors.map((e) => e.msg).filter(Boolean).join(". ")
+        : "";
       setSubmitError(
-        error?.data?.error ||
-          "We could not place your order. Please try again in a moment."
+        validationMessage ||
+          error?.data?.error ||
+          (error?.status === "FETCH_ERROR"
+            ? "Server is waking up. Please wait a few seconds and try again."
+            : "We could not place your order. Please try again in a moment.")
       );
     }
   };

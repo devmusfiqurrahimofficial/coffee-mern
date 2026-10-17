@@ -20,9 +20,8 @@ import {
   setInput,
 } from "../../redux/features/chatSlice/chatSlice";
 import { useGetMessagesQuery } from "../../redux/api/chatApi/chatApi";
-
-const API_BASE = import.meta.env.VITE_API_BASE || "https://coffee-mern.onrender.com";
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://coffee-mern.onrender.com";
+import { API_BASE_URL as API_BASE } from "../../utils/apiConfig";
+import { API_BASE_URL as SOCKET_URL } from "../../utils/apiConfig";
 
 const formatTime = new Intl.DateTimeFormat("en-US", {
   hour: "numeric",
@@ -207,30 +206,26 @@ const ChatBot = () => {
       socketRef.current = socket;
 
       socket.on("connect", () => {
-        console.log("Socket connected:", socket.id);
         if (sessionId) {
           socket.emit("join:customer", { sessionId });
         }
       });
 
       socket.on("reconnect", (attemptNumber) => {
-        console.log("Socket reconnected, attempt:", attemptNumber);
         if (sessionId) {
           socket.emit("join:customer", { sessionId });
         }
       });
 
-      socket.on("reconnect_error", (err) => {
-        console.error("Socket reconnect error:", err.message);
+      socket.on("reconnect_error", () => {
+        dispatch(setSendError("Connection lost. Trying to reconnect…"));
       });
 
       socket.on("reconnect_failed", () => {
-        console.error("Socket reconnection failed");
         dispatch(setSendError("Connection lost. Please refresh the page."));
       });
 
       socket.on("disconnect", (reason) => {
-        console.log("Socket disconnected:", reason);
         if (reason === "io server disconnect") {
           // Server initiated disconnect — will attempt reconnect
           socket.connect();

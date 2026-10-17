@@ -74,12 +74,10 @@ const Nav = ({ setCartOpen }) => {
     setLoading(true);
     signOut(auth)
       .then(() => {
-        console.log("User signed out successfully");
         dispatch(clearWishlist());
         setLoading(false);
       })
-      .catch((error) => {
-        console.log(error);
+      .catch(() => {
         setLoading(false);
       });
   };

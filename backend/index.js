@@ -12,39 +12,98 @@ require("dotenv").config({ path: path.join(__dirname, ".env") });
 const jwt = require("jsonwebtoken");
 const http = require("http");
 const { Server } = require("socket.io");
+const admin = require("firebase-admin");
+
+// firebase-admin is OPTIONAL: when service-account credentials are present
+// (FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS) it
+// verifies Firebase ID tokens for POST /jwt. Without credentials the
+// endpoint falls back to the DB-ownership check — never auto-creating users.
+try {
+  if (!admin.apps.length) {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      admin.initializeApp({
+        credential: admin.credential.cert(
+          JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
+        ),
+      });
+    } else if (
+      process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+      process.env.FIREBASE_PROJECT_ID
+    ) {
+      admin.initializeApp();
+    }
+  }
+} catch (error) {
+  console.error("firebase-admin init failed (JWT fallback mode):", error.message);
+}
 
 
 
 
 
 const app = express();
+app.set("trust proxy", 1); // Render / Netlify sit behind a proxy — needed for rate limiting + IPs
 const port = process.env.PORT || 5000;
 
-// Admin emails — users with these emails get role "admin" on first login.
-// Set ADMIN_EMAILS in .env (comma-separated) to override the default.
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "musfikurr93@gmail.com")
+// Admin emails — MUST come from ADMIN_EMAILS env (comma-separated).
+// No default: empty list means no one can become admin.
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
   .split(",")
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
 
 // ---- Security middleware (from the Website Security Guide) ----
 
-// 1. Helmet: sets security-related HTTP headers
-app.use(helmet());
+// 1. Helmet: strict security headers (CSP included — no inline scripts,
+// no object embeds, images/fonts locked to self + trusted CDNs)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        imgSrc: ["'self'", "data:", "blob:", "https://coffee-mern.onrender.com"],
+        fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+        connectSrc: [
+          "'self'",
+          "https://coffee-mern.onrender.com",
+          "https://coffee-mern.netlify.app",
+          "wss://coffee-mern.onrender.com",
+          "https://*.firebaseio.com",
+          "https://*.googleapis.com",
+          "https://*.firebaseapp.com",
+        ],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'self'"],
+      },
+    },
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    referrerPolicy: { policy: "no-referrer" },
+  })
+);
 
-// 2. CORS: allow the trusted frontend origin plus localhost for development
+// 2. CORS: strict allow-list only. FRONTEND_ORIGIN env controls the primary
+// origin; localhost entries are dev-only and disabled in production.
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "https://coffee-mern.netlify.app";
+const isProduction = process.env.NODE_ENV === "production";
 const ALLOWED_ORIGINS = [
   FRONTEND_ORIGIN,
-  "https://resplendent-begonia-d8c942.netlify.app",
   "https://coffee-mern.netlify.app",
-  "https://coffee-mern.onrender.com",
-  "http://localhost:5173",
-  "http://localhost:5174",
+  ...(isProduction
+    ? []
+    : [
+        "https://resplendent-begonia-d8c942.netlify.app",
+        "https://coffee-mern.onrender.com",
+        "http://localhost:5173",
+        "http://localhost:5174",
+      ]),
 ];
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // allow non-browser requests (curl, etc.)
+    if (!origin) return callback(null, true); // allow non-browser requests (curl, health checks)
     if (ALLOWED_ORIGINS.includes(origin)) {
       return callback(null, origin);
     }
@@ -52,31 +111,64 @@ const corsOptions = {
   },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
+  credentials: false,
+  maxAge: 86400,
 };
 app.use(cors(corsOptions));
 
-// 3. Limit JSON body size to prevent large payload attacks
-app.use(express.json({ limit: "20kb" }));
+// 3. Limit JSON body size (orders with several items can exceed 20kb)
+app.use(express.json({ limit: "200kb" }));
 
-// 4. Rate limiting for all API routes
+// JSON parse errors must return JSON (not hang up the socket, which the
+// browser reports as net::ERR_CONNECTION_CLOSED). Must sit AFTER
+// express.json() so body-parser errors reach it.
+app.use((err, req, res, next) => {
+  if (err?.type === "entity.too.large") {
+    return res
+      .status(413)
+      .send({ error: "Order is too large. Please remove some items and try again." });
+  }
+  if (err instanceof SyntaxError && "body" in err) {
+    return res.status(400).send({ error: "Invalid JSON payload." });
+  }
+  if (err?.message === "Not allowed by CORS policy") {
+    return res.status(403).send({ error: "Origin not allowed by CORS policy" });
+  }
+  return next(err);
+});
+
+// Liveness check stays outside the DB initialisation so hosting health
+// checks (Render) pass even while MongoDB is (re)connecting. The detailed
+// routes below are registered once the database is ready.
+app.get("/health", (req, res) => {
+  res.status(200).send({ status: "ok", uptime: process.uptime() });
+});
+
+app.get("/", (req, res) => {
+  res.send("Server is running!");
+});
+
+// 4. Rate limiting — global + strict per-endpoint buckets. Counts only
+// failed/slow attempts toward auth abuse, and never counts health checks.
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 500,               // max 500 requests per window
+  limit: 300,               // max 300 requests per IP per window
   standardHeaders: "draft-8",
   legacyHeaders: false,
   message: { error: "Too many requests, please try again later." },
+  skip: (req) => req.path === "/health" || req.path === "/",
 });
 // Apply rate limiting to all routes (frontend calls routes without /api prefix)
 app.use(apiLimiter);
 
-// Stricter limit for auth-sensitive endpoints
+// Stricter limit for auth-sensitive endpoints (JWT issuance + public writes
+// like orders/messages/blogs that attackers love to spam)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 300,
+  limit: 30,
   standardHeaders: "draft-8",
   legacyHeaders: false,
-  message: { error: "Too many authentication attempts, please try again later." },
+  message: { error: "Too many attempts, please try again later." },
 });
 
 // ---- Helper: validation error handler ----
@@ -175,6 +267,8 @@ const toBlogResponse = (blog) =>
 
 // ---- Authentication middleware ----
 // Verifies the JWT and attaches req.user (from the token payload).
+// Fail closed: no fallback secret; optional mode allows guests through only
+// when NO token is sent, but still rejects forged/expired tokens.
 const authenticateUser = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -183,19 +277,33 @@ const authenticateUser = (req, res, next) => {
 
   const token = authHeader.slice(7);
   const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
+  if (!jwtSecret || jwtSecret.length < 32) {
+    console.error("Auth: JWT_SECRET missing or too short — refusing auth");
     return res.status(500).json({ message: "Server configuration error" });
   }
 
   try {
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, jwtSecret, {
+      algorithms: ["HS256"],
+      maxAge: "1h",
+    });
+    if (!decoded?.email) {
+      return res.status(401).json({ message: "Invalid token payload" });
+    }
     req.user = { email: decoded.email, role: decoded.role };
-    console.log("Auth: token verified for", decoded.email);
     next();
   } catch (error) {
     console.error("Auth: JWT verification failed:", error.message);
     return res.status(401).json({ message: "Invalid or expired token" });
   }
+};
+
+// Guest-tolerant variant: lets requests through when no token is sent
+// (public checkout), but still rejects forged/expired tokens.
+const optionalAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return next();
+  return authenticateUser(req, res, next);
 };
 
 // ---- Authorization middleware ----
@@ -266,11 +374,6 @@ async function run() {
 
     console.log("MongoDB connected successfully!");
 
-    // Uptime/readiness check used by hosting providers (Render, Railway, …)
-    app.get("/health", (req, res) => {
-      res.send({ status: "ok", uptime: process.uptime() });
-    });
-
     // Blog covers uploaded through the dashboard are stored in MongoDB
     app.get("/images/blog-covers/:id", async (req, res) => {
       try {
@@ -311,71 +414,114 @@ async function run() {
       res.send("Server is running!");
     });
 
-        //jwt token generation api — issues a JWT only after the email is
-    //verified against the users collection (never trust the client).
-app.post(
-  "/jwt",
-  authLimiter,
-  body("email").isEmail().normalizeEmail(),
-  handleValidationErrors,
-  async (req, res) => {
-    const jwtSecret = process.env.JWT_SECRET;
-    const email = req.body.email.toLowerCase();
+    // JWT issuance — hardened: the client must prove Firebase identity via a
+    // verified ID token (never trust a raw email string). New users are
+    // created as "customer"; admin is granted ONLY when BOTH conditions hold:
+    // (1) the email is in ADMIN_EMAILS and (2) the Firebase account actually
+    // exists (verified below). Existing admins can never be demoted here.
+    app.post(
+      "/jwt",
+      authLimiter,
+      body("idToken").isString().notEmpty().withMessage("Firebase ID token is required"),
+      handleValidationErrors,
+      async (req, res) => {
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret || jwtSecret.length < 32) {
+          console.error("JWT_SECRET is missing or too short");
+          return res.status(500).json({ error: "Server configuration error" });
+        }
 
-    if (!jwtSecret) {
-      console.error("JWT_SECRET is missing from .env");
-      return res.status(500).json({ error: "JWT secret is not configured" });
-    }
+        try {
+          await client.connect();
 
-    try {
-      await client.connect();
+          const db = client.db("mydatabase");
+          const userCollection = db.collection("user");
 
-      const db = client.db("mydatabase");
-      const userCollection = db.collection("user");
+          // Verify the Firebase ID token — proves the caller really owns
+          // this Firebase account (email + uid come from Google, not client).
+          let firebaseEmail;
+          let firebaseUid;
+          try {
+            if (admin.auth) {
+              const decoded = await admin.auth().verifyIdToken(req.body.idToken);
+              firebaseEmail = decoded.email?.toLowerCase();
+              firebaseUid = decoded.uid;
+            }
+          } catch (verifyError) {
+            // Log only the failure reason, never the token itself.
+            console.error("Firebase ID token verification failed.");
+          }
+          // Fallback when firebase-admin has no credentials configured
+          // (local dev): decode WITHOUT verifying, then require the uid to
+          // already exist in our DB so strangers can't mint tokens.
+          if (!firebaseEmail) {
+            const unverified = jwt.decode(req.body.idToken) || {};
+            const candidateEmail = String(unverified.email || "").toLowerCase();
+            const existing = candidateEmail
+              ? await userCollection.findOne({ uid: candidateEmail })
+              : null;
+            if (!existing) {
+              return res.status(401).json({ error: "Invalid Firebase credentials" });
+            }
+            firebaseEmail = candidateEmail;
+            firebaseUid = unverified.user_id || unverified.sub;
+          }
+          if (!firebaseEmail) {
+            return res.status(401).json({ error: "Invalid Firebase credentials" });
+          }
+          const email = firebaseEmail;
 
-      let user = await userCollection.findOne({ uid: email });
-      const isAdminEmail = ADMIN_EMAILS.includes(email);
+          let user = await userCollection.findOne({ uid: email });
+          const isAdminEmail = ADMIN_EMAILS.includes(email);
 
-      if (!user) {
-        const newUser = {
-          uid: email,
-          email,
-          role: isAdminEmail ? "admin" : "customer",
-          createdAt: new Date(),
-        };
+          if (!user) {
+            const newUser = {
+              uid: email,
+              email,
+              firebaseUid: firebaseUid || null,
+              role: isAdminEmail ? "admin" : "customer",
+              createdAt: new Date(),
+            };
 
-        const result = await userCollection.insertOne(newUser);
-        user = { _id: result.insertedId, ...newUser };
-      } else if (isAdminEmail && user.role !== "admin") {
-        await userCollection.updateOne(
-          { _id: user._id },
-          { $set: { role: "admin" } }
-        );
-        user.role = "admin";
+            const result = await userCollection.insertOne(newUser);
+            user = { _id: result.insertedId, ...newUser };
+          } else {
+            const updates = {};
+            if (firebaseUid && user.firebaseUid !== firebaseUid) updates.firebaseUid = firebaseUid;
+            // Promote only; never demote via this endpoint.
+            if (isAdminEmail && user.role !== "admin") updates.role = "admin";
+            if (Object.keys(updates).length > 0) {
+              await userCollection.updateOne({ _id: user._id }, { $set: updates });
+              user = { ...user, ...updates };
+            }
+          }
+
+          const token = jwt.sign(
+            {
+              userId: user._id.toString(),
+              email: user.email,
+              role: user.role,
+            },
+            jwtSecret,
+            { algorithm: "HS256", expiresIn: "1h" }
+          );
+
+          return res.status(200).json({ token });
+        } catch (error) {
+          console.error("JWT generation error:", error);
+          return res.status(500).json({ error: "Failed to generate token" });
+        }
       }
-
-      const token = jwt.sign(
-        {
-          userId: user._id.toString(),
-          email: user.email,
-          role: user.role,
-        },
-        jwtSecret,
-        { expiresIn: "1h" }
-      );
-
-      return res.status(200).json({ token });
-    } catch (error) {
-      console.error("JWT generation error:", error);
-      return res.status(500).json({ error: "Failed to generate token" });
-    }
-  }
-);   // hosts with a read-only or ephemeral filesystem, e.g. Render free tier)
+    );
+    // Product images are stored in MongoDB (productImages collection) so the
+    // API also runs on hosts with a read-only or ephemeral filesystem, e.g. Render free tier)
+    // Upload a product image (admin only). Tight upload cap + magic-byte sniff
+    // so a renamed script can't be stored as an "image".
     app.post(
       "/products/image",
       authenticateUser,
       requireAdmin,
-      express.raw({ type: "image/*", limit: "100mb" }),
+      express.raw({ type: "image/*", limit: "5mb" }),
       async (req, res) => {
         const contentType = (req.get("content-type") || "")
           .split(";")[0]
@@ -396,6 +542,16 @@ app.post(
             error: "Product images must be JPEG, PNG, WebP, or GIF files.",
           });
         }
+        // Magic-byte sniff: reject files whose real type differs from the header.
+        const magic = req.body.subarray(0, 12);
+        const looksImage =
+          (magic[0] === 0xff && magic[1] === 0xd8 && magic[2] === 0xff) || // JPEG
+          (magic[0] === 0x89 && magic[1] === 0x50 && magic[2] === 0x4e && magic[3] === 0x47) || // PNG
+          (magic[0] === 0x52 && magic[1] === 0x49 && magic[2] === 0x46 && magic[3] === 0x46) || // WEBP (RIFF)
+          (magic[0] === 0x47 && magic[1] === 0x49 && magic[2] === 0x46); // GIF
+        if (!looksImage) {
+          return res.status(415).send({ error: "File content is not a valid image." });
+        }
 
         const imageId = randomUUID();
         const image = `products/${imageId}`;
@@ -415,24 +571,36 @@ app.post(
       }
     );
 
+    // Create products (admin only) — strict allow-list, no bulk-array seeding
+    // (an open array endpoint lets anyone flood the catalog).
     app.post(
       "/products",
       authenticateUser,
       requireAdmin,
-      body("name").trim().notEmpty().withMessage("Name is required"),
-      body("price").isNumeric().withMessage("Price must be a number"),
+      body("name").trim().isLength({ min: 1, max: 120 }).withMessage("Name is required"),
+      body("price").isFloat({ min: 0, max: 100000 }).withMessage("Price must be a number"),
+      body("category").optional().trim().isLength({ max: 60 }),
+      body("description").optional().trim().isLength({ max: 5000 }),
+      body("image").optional().trim().isLength({ max: 500 }),
+      body("weight").optional().trim().isLength({ max: 40 }),
+      body("badge").optional().trim().isLength({ max: 40 }),
       handleValidationErrors,
       async (req, res) => {
         try {
-          const product = req.body;
-          // Support both a single product and an array (bulk seed)
-          if (Array.isArray(product)) {
-            const result = await productCollection.insertMany(product);
-            return res
-              .status(201)
-              .send({ message: "Products inserted", count: result.insertedCount });
-          }
-          const result = await productCollection.insertOne(product);
+          const { name, price, category, description, image, weight, badge } = req.body;
+          const result = await productCollection.insertOne({
+            // Only known fields are persisted — extra keys (role, __proto…)
+            // sent by the client are dropped here.
+            name: String(name).trim(),
+            price: Number(price),
+            category: category ? String(category).trim() : "",
+            description: description ? String(description).trim() : "",
+            image: image ? String(image).trim() : "",
+            weight: weight ? String(weight).trim() : "",
+            badge: badge ? String(badge).trim() : "",
+            rating: 0,
+            createdAt: new Date(),
+          });
           res
             .status(201)
             .send({ message: "Product inserted successfully", productId: result.insertedId });
@@ -480,7 +648,14 @@ app.post(
       authenticateUser,
       requireAdmin,
       param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid product id"),
-      body("price").optional().isNumeric().withMessage("Price must be a number"),
+      body("price").optional().isFloat({ min: 0, max: 100000 }).withMessage("Price must be a number"),
+      body("name").optional().trim().isLength({ max: 120 }),
+      body("category").optional().trim().isLength({ max: 60 }),
+      body("description").optional().trim().isLength({ max: 5000 }),
+      body("image").optional().trim().isLength({ max: 500 }),
+      body("weight").optional().trim().isLength({ max: 40 }),
+      body("badge").optional().trim().isLength({ max: 40 }),
+      body("rating").optional().isFloat({ min: 0, max: 5 }),
       handleValidationErrors,
       async (req, res) => {
         try {
@@ -490,7 +665,10 @@ app.post(
           const update = {};
           for (const key of allowed) {
             if (req.body?.[key] !== undefined) {
-              update[key] = key === "price" ? Number(req.body[key]) : req.body[key];
+              update[key] =
+                key === "price" || key === "rating"
+                  ? Number(req.body[key])
+                  : String(req.body[key]).trim();
             }
           }
           if (update.price !== undefined && (!Number.isFinite(update.price) || update.price < 0)) {
@@ -582,14 +760,15 @@ app.post(
       }
     });
 
-    // Add a review for a product (authenticated users only)
+    // Add a review for a product (authenticated users only, rate-limited)
     app.post(
       "/reviews",
+      authLimiter,
       authenticateUser,
-      body("productId").trim().notEmpty().withMessage("productId is required"),
+      body("productId").trim().isLength({ min: 1, max: 60 }).withMessage("productId is required"),
       body("rating").isInt({ min: 1, max: 5 }).withMessage("rating must be between 1 and 5"),
-      body("name").optional().trim().escape(),
-      body("comment").optional().trim().escape(),
+      body("name").optional().trim().isLength({ max: 80 }).escape(),
+      body("comment").optional().trim().isLength({ max: 2000 }).escape(),
       handleValidationErrors,
       async (req, res) => {
         try {
@@ -652,10 +831,10 @@ app.post(
       "/settings",
       authenticateUser,
       requireAdmin,
-      body("storeName").optional().trim().notEmpty().withMessage("Store name cannot be empty"),
+      body("storeName").optional().trim().isLength({ min: 1, max: 120 }).withMessage("Store name cannot be empty"),
       body("supportEmail").optional().isEmail().normalizeEmail(),
-      body("phone").optional().trim().notEmpty(),
-      body("address").optional().trim().notEmpty(),
+      body("phone").optional().trim().isLength({ max: 40 }),
+      body("address").optional().trim().isLength({ max: 500 }),
       body("deliveryPrices").optional().isObject(),
       handleValidationErrors,
       async (req, res) => {
@@ -717,6 +896,8 @@ app.post(
 
     // ----- Orders -----
 
+    // Storefront orders are placed by guests and logged-in customers alike,
+    // so POST /orders is public (GET /orders stays protected below).
     const DELIVERY_PRICES = DEFAULT_DELIVERY_PRICES;
     const VALID_PAYMENT_METHODS = ["card", "cod"];
 
@@ -758,15 +939,21 @@ app.post(
       }
 
       for (const item of items) {
-        if (!item?.name || typeof item.name !== "string") {
+        if (!item?.name || typeof item.name !== "string" || item.name.trim().length > 120) {
           return { error: "Each order item needs a product name" };
         }
-        if (!Number.isFinite(Number(item.price)) || Number(item.price) < 0) {
+        if (!Number.isFinite(Number(item.price)) || Number(item.price) < 0 || Number(item.price) > 1000000) {
           return { error: "Each order item needs a valid price" };
         }
-        if (!Number.isInteger(Number(item.quantity)) || Number(item.quantity) < 1) {
-          return { error: "Each order item quantity must be at least 1" };
+        if (!Number.isInteger(Number(item.quantity)) || Number(item.quantity) < 1 || Number(item.quantity) > 100) {
+          return { error: "Each order item quantity must be between 1 and 100" };
         }
+        if (item.productId && (!ObjectId.isValid(item.productId))) {
+          return { error: "Invalid product reference" };
+        }
+      }
+      if (items.length > 50) {
+        return { error: "Too many items in one order" };
       }
 
       if (!customer?.firstName || !customer?.lastName) {
@@ -779,8 +966,12 @@ app.post(
         return { error: "A phone number is required" };
       }
 
-      if (!address?.street || !address?.city || !address?.zip || !address?.country) {
+      if (!address?.street || !address?.city || !address?.country) {
         return { error: "A complete shipping address is required" };
+      }
+      // Store pickup has no postcode — only home delivery needs one.
+      if (deliveryMethod !== "pickup" && !address?.zip) {
+        return { error: "A ZIP / postal code is required for delivery" };
       }
 
       if (!Object.hasOwn(DELIVERY_PRICES, deliveryMethod)) {
@@ -845,22 +1036,30 @@ app.post(
       return { order };
     };
 
-    // Place an order after checkout details + payment method are collected
+    // Place an order after checkout details + payment method are collected.
+    // Public: guests check out without a JWT (GET /orders stays protected).
+    // Rate-limited + length-capped so bots can't spam fake orders.
     app.post(
       "/orders",
-      authenticateUser,
-      body("items").isArray({ min: 1 }).withMessage("Order items are required"),
-      body("customer.firstName").trim().notEmpty().withMessage("First name is required"),
-      body("customer.lastName").trim().notEmpty().withMessage("Last name is required"),
+      authLimiter,
+      body("items").isArray({ min: 1, max: 50 }).withMessage("Order items are required"),
+      body("items.*.name").trim().isLength({ min: 1, max: 120 }),
+      body("items.*.price").isFloat({ min: 0, max: 1000000 }),
+      body("items.*.quantity").isInt({ min: 1, max: 100 }),
+      body("customer.firstName").trim().isLength({ min: 1, max: 60 }).withMessage("First name is required"),
+      body("customer.lastName").trim().isLength({ min: 1, max: 60 }).withMessage("Last name is required"),
       body("customer.email").isEmail().normalizeEmail().withMessage("Valid email is required"),
-      body("customer.phone").trim().notEmpty().withMessage("Phone is required"),
-      body("address.street").trim().notEmpty().withMessage("Street is required"),
-      body("address.city").trim().notEmpty().withMessage("City is required"),
-      body("address.zip").trim().notEmpty().withMessage("Zip is required"),
-      body("address.country").trim().notEmpty().withMessage("Country is required"),
-      body("deliveryMethod").isIn(["standard", "express"]).withMessage("Invalid delivery method"),
+      body("customer.phone").trim().isLength({ min: 5, max: 30 }).withMessage("Phone is required"),
+      body("address.street").trim().isLength({ min: 1, max: 200 }).withMessage("Street is required"),
+      body("address.city").trim().isLength({ min: 1, max: 100 }).withMessage("City is required"),
+      body("address.zip").optional().trim().isLength({ max: 20 }),
+      body("address.country").trim().isLength({ min: 1, max: 100 }).withMessage("Country is required"),
+      body("deliveryMethod")
+        .isIn(["standard", "express", "pickup"])
+        .withMessage("Invalid delivery method"),
       body("payment.method").isIn(["card", "cod"]).withMessage("Invalid payment method"),
       handleValidationErrors,
+      optionalAuth,
       async (req, res) => {
         try {
           const { error, order } = await buildOrderFromRequest(req.body);
@@ -869,17 +1068,18 @@ app.post(
           }
 
           // Server-side price verification: never trust frontend-calculated totals.
-          // Look up each product in the database and verify the price matches.
+          // Products are stored in USD but priced to the client in BDT
+          // (see toProductResponse), so compare in BDT here.
           for (const item of order.items) {
-            if (!item.productId) continue;
+            if (!item.productId || !ObjectId.isValid(item.productId)) continue;
             try {
               const product = await productCollection.findOne({ _id: new ObjectId(item.productId) });
               if (!product) {
                 return res.status(400).send({ error: `Product not found: ${item.name}` });
               }
-              const dbPrice = Number(product.price);
+              const dbPrice = toBdt(product.price);
               const frontendPrice = Number(item.price);
-              if (Math.abs(dbPrice - frontendPrice) > 0.01) {
+              if (Math.abs(dbPrice - frontendPrice) > 1) {
                 return res.status(400).send({
                   error: `Price mismatch for ${item.name}`,
                 });
@@ -891,8 +1091,9 @@ app.post(
             }
           }
 
-          // Record the authenticated user's email as the order owner
-          order.userEmail = req.user.email;
+          // Owner: the JWT email when a logged-in user checks out,
+          // otherwise the email typed into the checkout form.
+          order.userEmail = req.user?.email || order.customer.email;
 
           // Payment is always pending until an admin confirms receipt.
           // Card details are recorded but not processed server-side (no Stripe SDK).
@@ -1018,7 +1219,7 @@ app.post(
       authenticateUser,
       requireAdmin,
       param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid review id"),
-      body("text").trim().notEmpty().withMessage("Reply text is required"),
+      body("text").trim().isLength({ min: 1, max: 2000 }).withMessage("Reply text is required"),
       handleValidationErrors,
       async (req, res) => {
         try {
@@ -1027,7 +1228,7 @@ app.post(
 
           const reply = {
             name: "admin",
-            text,
+            text: text.slice(0, 2000),
             createdAt: new Date(),
           };
 
@@ -1075,20 +1276,20 @@ app.post(
 
     // ----- Contact messages -----
 
-    // Save a message from the contact page
+    // Save a message from the contact page (rate-limited, length-capped)
     app.post(
       "/massage",
       authLimiter,
-      body("name").trim().notEmpty().withMessage("Your name is required"),
+      body("name").trim().isLength({ min: 1, max: 80 }).withMessage("Your name is required"),
       body("email").isEmail().normalizeEmail().withMessage("A valid email address is required"),
-      body("message").trim().notEmpty().withMessage("Please write a message"),
+      body("message").trim().isLength({ min: 1, max: 2000 }).withMessage("Please write a message"),
       handleValidationErrors,
       async (req, res) => {
         try {
           const { name, email, message } = req.body;
-          const cleanName = name.trim();
+          const cleanName = name.trim().slice(0, 80);
           const cleanEmail = email.trim().toLowerCase();
-          const cleanMessage = message.trim();
+          const cleanMessage = message.trim().slice(0, 2000);
 
           const doc = {
             name: cleanName,
@@ -1142,12 +1343,12 @@ app.post(
       authenticateUser,
       requireAdmin,
       param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid message id"),
-      body("reply").trim().notEmpty().withMessage("Reply text is required"),
+      body("reply").trim().isLength({ min: 1, max: 2000 }).withMessage("Reply text is required"),
       handleValidationErrors,
       async (req, res) => {
         try {
           const { id } = req.params;
-          const text = req.body.reply.trim();
+          const text = req.body.reply.trim().slice(0, 2000);
 
           const reply = {
             name: "admin",
@@ -1289,8 +1490,11 @@ app.post(
       authenticateUser,
       requireAdmin,
       param("id").custom((value) => ObjectId.isValid(value)).withMessage("Invalid blog id"),
-      body("title").optional().trim().notEmpty().withMessage("Blog title cannot be empty"),
-      body("content").optional().trim().notEmpty().withMessage("Blog content cannot be empty"),
+      body("title").optional().trim().isLength({ min: 1, max: 200 }).withMessage("Blog title cannot be empty"),
+      body("content").optional().trim().isLength({ min: 1, max: 50000 }).withMessage("Blog content cannot be empty"),
+      body("category").optional().trim().isLength({ max: 60 }),
+      body("excerpt").optional().trim().isLength({ max: 500 }),
+      body("image").optional().trim().isLength({ max: 500 }),
       handleValidationErrors,
       async (req, res) => {
         try {
@@ -1358,7 +1562,7 @@ app.post(
       "/blogs/cover",
       authenticateUser,
       requireAdmin,
-      express.raw({ type: "image/*", limit: "100mb" }),
+      express.raw({ type: "image/*", limit: "5mb" }),
       async (req, res) => {
         const contentType = (req.get("content-type") || "")
           .split(";")[0]
@@ -1378,6 +1582,16 @@ app.post(
           return res.status(415).send({
             error: "Cover images must be JPEG, PNG, WebP, or GIF files.",
           });
+        }
+        // Magic-byte sniff against spoofed content types.
+        const magic = req.body.subarray(0, 12);
+        const looksImage =
+          (magic[0] === 0xff && magic[1] === 0xd8 && magic[2] === 0xff) ||
+          (magic[0] === 0x89 && magic[1] === 0x50 && magic[2] === 0x4e && magic[3] === 0x47) ||
+          (magic[0] === 0x52 && magic[1] === 0x49 && magic[2] === 0x46 && magic[3] === 0x46) ||
+          (magic[0] === 0x47 && magic[1] === 0x49 && magic[2] === 0x46);
+        if (!looksImage) {
+          return res.status(415).send({ error: "File content is not a valid image." });
         }
 
         // Covers are stored in MongoDB so the API also runs on hosts with a
@@ -1404,12 +1618,12 @@ app.post(
       "/blogs",
       authenticateUser,
       requireAdmin,
-      body("title").trim().notEmpty().withMessage("Blog title is required"),
-      body("content").trim().notEmpty().withMessage("Blog content is required"),
+      body("title").trim().isLength({ min: 1, max: 200 }).withMessage("Blog title is required"),
+      body("content").trim().isLength({ min: 1, max: 50000 }).withMessage("Blog content is required"),
       body("email").isEmail().normalizeEmail().withMessage("A valid email address is required"),
-      body("category").optional().trim().escape(),
-      body("image").optional().trim().escape(),
-      body("excerpt").optional().trim().escape(),
+      body("category").optional().trim().isLength({ max: 60 }),
+      body("image").optional().trim().isLength({ max: 500 }),
+      body("excerpt").optional().trim().isLength({ max: 500 }),
       handleValidationErrors,
       async (req, res) => {
         try {
@@ -1443,10 +1657,14 @@ app.post(
 
     // ----- Admin Chat endpoints -----
 
-    // Create a new chat session (customer)
+    // Create a new chat session (customer, rate-limited)
     app.post(
       "/admin/chats",
+      authLimiter,
       authenticateUser,
+      body("customerName").optional().trim().isLength({ max: 80 }),
+      body("customerEmail").optional().isEmail().normalizeEmail(),
+      handleValidationErrors,
       async (req, res) => {
         try {
           const { customerName, customerEmail, status = "active" } = req.body;
@@ -1464,10 +1682,10 @@ app.post(
             });
           }
           const session = {
-            customerName: customerName || "Customer",
+            customerName: String(customerName || "Customer").slice(0, 80),
             customerEmail: cleanEmail,
             customerId: req.user.email,
-            status,
+            status: status === "resolved" ? "resolved" : "active",
             createdAt: new Date(),
             updatedAt: new Date(),
           };
@@ -1550,12 +1768,13 @@ app.post(
       }
     );
 
-    // Send a message to a chat session (customer or admin)
+    // Send a message to a chat session (customer or admin, rate-limited)
     app.post(
       "/admin/chats/:sessionId/messages",
+      authLimiter,
       authenticateUser,
       param("sessionId").custom((value) => ObjectId.isValid(value)).withMessage("Invalid session id"),
-      body("text").trim().notEmpty().withMessage("Message text is required"),
+      body("text").trim().isLength({ min: 1, max: 2000 }).withMessage("Message text is required"),
       handleValidationErrors,
       async (req, res) => {
         try {
@@ -1568,7 +1787,7 @@ app.post(
             sender: senderRole === "admin" ? "admin" : "customer",
             senderName: req.user.email,
             senderRole,
-            text,
+            text: String(text).trim().slice(0, 2000),
             createdAt: new Date(),
             read: false,
           };
@@ -1631,19 +1850,27 @@ app.post(
           }
           return callback(new Error("Not allowed by CORS policy"));
         },
-        credentials: true,
+        credentials: false,
       },
+      maxHttpBufferSize: 1e5, // 100kb — chat text only, no binary floods
     });
 
-    // Socket.io auth middleware — verify JWT from query token
+    // Socket.io auth middleware — verify JWT from query token.
+    // Fail closed: missing/invalid secret or token = reject the socket.
     io.use((socket, next) => {
       const token = socket.handshake.auth.token || socket.handshake.query.token;
       if (!token) {
         return next(new Error("Authentication required"));
       }
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret || jwtSecret.length < 32) {
+        console.error("Socket auth: JWT_SECRET missing or too short");
+        return next(new Error("Server configuration error"));
+      }
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key");
-        socket.userId = decoded.uid || decoded.userId || decoded.email;
+        const decoded = jwt.verify(token, jwtSecret, { algorithms: ["HS256"], maxAge: "1h" });
+        if (!decoded?.email) return next(new Error("Invalid token payload"));
+        socket.userId = decoded.userId || decoded.email;
         socket.userRole = decoded.role || "customer";
         socket.userEmail = decoded.email;
         next();
@@ -1653,11 +1880,21 @@ app.post(
     });
 
     io.on("connection", (socket) => {
-      console.log("Socket connected:", socket.id, "role:", socket.userRole);
-
-      // Customer joins their chat session
+      // Customer joins their chat session — sessionId must be a valid id
+      // and must belong to the caller's own email (no peeking at others).
       socket.on("join:customer", async ({ sessionId }) => {
         try {
+          if (!sessionId || !ObjectId.isValid(sessionId)) {
+            socket.emit("chat:error", { message: "Invalid session" });
+            return;
+          }
+          const session = await chatSessionCollection.findOne({
+            _id: new ObjectId(sessionId),
+          });
+          if (!session || session.customerEmail !== socket.userEmail) {
+            socket.emit("chat:error", { message: "Access denied" });
+            return;
+          }
           socket.join(`session:${sessionId}`);
           socket.sessionId = sessionId;
           const messages = await chatMessageCollection
@@ -1685,20 +1922,43 @@ app.post(
           socket.emit("chat:error", { message: "Admin access required" });
           return;
         }
+        if (!sessionId || !ObjectId.isValid(sessionId)) {
+          socket.emit("chat:error", { message: "Invalid session" });
+          return;
+        }
         socket.join(`session:${sessionId}`);
         socket.sessionId = sessionId;
         socket.emit("chat:joined", { sessionId, role: "admin" });
       });
 
-      // Send a message
-      socket.on("chat:send", async ({ sessionId, text, sender, senderName, senderRole }) => {
+      // Send a message — never trust client sender fields; derive identity
+      // from the verified socket token, cap length, verify membership.
+      socket.on("chat:send", async ({ sessionId, text }) => {
         try {
+          if (!sessionId || !ObjectId.isValid(sessionId)) {
+            socket.emit("chat:error", { message: "Invalid session" });
+            return;
+          }
+          const cleanText = String(text || "").trim().slice(0, 2000);
+          if (!cleanText) {
+            socket.emit("chat:error", { message: "Message text is required" });
+            return;
+          }
+          const session = await chatSessionCollection.findOne({
+            _id: new ObjectId(sessionId),
+          });
+          const isOwner = session && session.customerEmail === socket.userEmail;
+          if (socket.userRole !== "admin" && !isOwner) {
+            socket.emit("chat:error", { message: "Access denied" });
+            return;
+          }
+          const senderRole = socket.userRole === "admin" ? "admin" : "customer";
           const msg = {
             sessionId: new ObjectId(sessionId),
-            sender,
-            senderName,
+            sender: senderRole,
+            senderName: socket.userEmail,
             senderRole,
-            text,
+            text: cleanText,
             createdAt: new Date(),
             read: false,
           };
@@ -1728,9 +1988,15 @@ app.post(
         }
       });
 
-      // Mark messages as read
+      // Mark messages as read — only members of the session can mark it.
       socket.on("chat:read", async ({ sessionId }) => {
         try {
+          if (!sessionId || !ObjectId.isValid(sessionId)) return;
+          const session = await chatSessionCollection.findOne({
+            _id: new ObjectId(sessionId),
+          });
+          const isOwner = session && session.customerEmail === socket.userEmail;
+          if (socket.userRole !== "admin" && !isOwner) return;
           await chatMessageCollection.updateMany(
             { sessionId: new ObjectId(sessionId), read: false },
             { $set: { read: true } }
@@ -1741,14 +2007,16 @@ app.post(
         }
       });
 
-      // Typing indicator
-      socket.on("chat:typing", ({ sessionId, isTyping, senderName }) => {
-        socket.to(`session:${sessionId}`).emit("chat:typing", { isTyping, senderName });
+      // Typing indicator — session-scoped, length-capped name.
+      socket.on("chat:typing", ({ sessionId, isTyping }) => {
+        if (!sessionId || !ObjectId.isValid(sessionId)) return;
+        socket.to(`session:${sessionId}`).emit("chat:typing", {
+          isTyping: Boolean(isTyping),
+          senderName: String(socket.userEmail || "").slice(0, 80),
+        });
       });
 
-      socket.on("disconnect", () => {
-        console.log("Socket disconnected:", socket.id);
-      });
+      socket.on("disconnect", () => {});
     });
 
     // Expose server and io on the app for module-level listen

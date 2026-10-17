@@ -44,8 +44,10 @@ const Login = () => {
   const returnTo = location.state?.from?.pathname || "/";
 
   // Ask the backend for a JWT and keep it for later API calls.
-  const fetchAndStoreToken = async (email) => {
-    const { token } = await generateJWT(email).unwrap();
+  // Proves account ownership with a Firebase ID token (never a raw email).
+  const fetchAndStoreToken = async (firebaseUser) => {
+    const idToken = await firebaseUser.getIdToken();
+    const { token } = await generateJWT(idToken).unwrap();
     localStorage.setItem("access-token", token);
     return token;
   };
@@ -62,7 +64,7 @@ const Login = () => {
         throw new Error("Your Google account has no email.");
       }
 
-      await fetchAndStoreToken(result.user.email);
+      await fetchAndStoreToken(result.user);
       navigate(returnTo, { replace: true });
     } catch (error) {
       console.error("Google login failed:", error);
@@ -84,7 +86,7 @@ const Login = () => {
       const auth = getAuth();
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-      await fetchAndStoreToken(userCredential.user.email);
+      await fetchAndStoreToken(userCredential.user);
 
       setMessage({ type: "success", text: "Login successful!" });
       navigate(returnTo, { replace: true });
