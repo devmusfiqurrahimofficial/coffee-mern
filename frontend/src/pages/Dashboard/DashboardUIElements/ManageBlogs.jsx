@@ -65,7 +65,7 @@ export const ManageBlogs = () => {
         actions={
           <Link
             to="/dashboard/blogs/add"
-            className="flex items-center gap-2 rounded-full bg-[#e11d48] px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40]"
+            className="flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)]"
           >
             <PlusCircleIcon className="h-4 w-4" />
             Add Blog
@@ -79,7 +79,7 @@ export const ManageBlogs = () => {
           className={`mb-5 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium ${
             message.type === "success"
               ? "border border-green-200 bg-green-50 text-green-700"
-              : "border border-[#e11d48]/30 bg-[#e11d48]/10 text-[#c81a40]"
+              : "border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 text-[var(--color-primary-hover)]"
           }`}
         >
           <ExclamationCircleIcon className="h-4 w-4" />
@@ -96,13 +96,13 @@ export const ManageBlogs = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search blogs…"
-            className="w-full rounded-full border border-black/10 bg-white py-2.5 pl-10 pr-4 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]"
+            className="w-full rounded-full border border-black/10 bg-white py-2.5 pl-10 pr-4 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]"
           />
         </div>
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-[#1d1d1d] outline-none transition focus:border-[#e11d48]"
+          className="rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
         >
           {categories.map((option) => (
             <option key={option} value={option}>
@@ -122,14 +122,14 @@ export const ManageBlogs = () => {
       )}
 
       {isError && (
-        <p className="rounded-2xl border border-[#e11d48]/30 bg-[#e11d48]/10 px-5 py-10 text-center text-sm text-[#c81a40]">
+        <p className="rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-5 py-10 text-center text-sm text-[var(--color-primary-hover)]">
           Failed to load blogs. Is the server running on port 5000?
         </p>
       )}
 
       {!isLoading && !isError && visible.length === 0 && (
         <div className="rounded-2xl border border-dashed border-black/10 bg-white/60 px-6 py-16 text-center">
-          <p className="font-serif text-xl text-[#1d1d1d]">No blog posts yet</p>
+          <p className="font-serif text-xl text-[var(--color-text)]">No blog posts yet</p>
           <p className="mt-2 text-sm text-neutral-500">
             Write your first story to share with the community.
           </p>
@@ -158,12 +158,12 @@ export const ManageBlogs = () => {
               </div>
               <div className="flex flex-1 flex-col p-4">
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                  <span className="rounded-full bg-[#f3efe7] px-2 py-0.5 text-[#1d1d1d]">
+                  <span className="rounded-full bg-[#f3efe7] px-2 py-0.5 text-[var(--color-text)]">
                     {blog.category || "Community"}
                   </span>
                   <span>{formatDate(blog.createdAt)}</span>
                 </div>
-                <h3 className="mt-2 font-serif text-lg font-bold leading-tight text-[#1d1d1d]">
+                <h3 className="mt-2 font-serif text-lg font-bold leading-tight text-[var(--color-text)]">
                   {blog.title}
                 </h3>
                 <p className="mt-1 line-clamp-2 text-xs text-neutral-500">
@@ -175,14 +175,14 @@ export const ManageBlogs = () => {
                   <div className="flex items-center gap-3">
                     <Link
                       to={`/blog/${blog._id}`}
-                      className="text-xs font-semibold text-neutral-600 transition hover:text-[#e11d48]"
+                      className="text-xs font-semibold text-neutral-600 transition hover:text-[var(--color-primary)]"
                     >
                       View post
                     </Link>
                     <button
                       type="button"
                       onClick={() => setEditing(blog)}
-                      className="flex items-center gap-1.5 rounded-full border border-black/10 px-3.5 py-1.5 text-xs font-semibold text-[#1d1d1d] transition hover:border-[#1d1d1d]"
+                      className="flex items-center gap-1.5 rounded-full border border-black/10 px-3.5 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)]"
                     >
                       <PencilSquareIcon className="h-4 w-4" />
                       Edit
@@ -192,7 +192,7 @@ export const ManageBlogs = () => {
                     type="button"
                     onClick={() => handleDelete(blog)}
                     disabled={isDeleting}
-                    className="flex items-center gap-1.5 rounded-full border border-[#e11d48]/30 px-3.5 py-1.5 text-xs font-semibold text-[#e11d48] transition hover:bg-[#e11d48] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex items-center gap-1.5 rounded-full border border-[var(--color-primary)]/30 px-3.5 py-1.5 text-xs font-semibold text-[var(--color-primary)] transition hover:bg-[var(--color-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <TrashIcon className="h-4 w-4" />
                     Delete

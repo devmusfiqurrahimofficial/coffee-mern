@@ -10,6 +10,7 @@ import {
   DocumentTextIcon,
   EnvelopeIcon,
   HomeIcon,
+  PaintBrushIcon,
   PlusCircleIcon,
   Squares2X2Icon,
   UsersIcon,
@@ -59,6 +60,7 @@ const NAV_SECTIONS = [
       { to: "/dashboard/messages", label: "Messages", Icon: EnvelopeIcon, badgeKey: "messages" },
       { to: "/dashboard/chats", label: "Chats", Icon: ChatBubbleLeftIcon },
       { to: "/dashboard/reviews", label: "Reviews", Icon: ChatBubbleLeftEllipsisIcon },
+      { to: "/dashboard/content", label: "Page Content", Icon: PaintBrushIcon },
       { to: "/dashboard/settings", label: "Settings", Icon: Cog6ToothIcon },
     ],
   },
@@ -101,10 +103,10 @@ export const Sidebar = ({ open, onClose }) => {
           <NavLink to="/dashboard" onClick={onClose} className="flex items-center gap-3">
             <img src={logo} alt="Coffee Mern" className="h-10 w-auto" />
             <span>
-              <span className="block font-serif text-base font-black leading-tight text-[#1d1d1d]">
+              <span className="block font-serif text-base font-black leading-tight text-[var(--color-text)]">
                 Coffee Mern
               </span>
-              <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#e11d48]">
+              <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-primary)]">
                 Admin Panel
               </span>
             </span>
@@ -129,12 +131,12 @@ export const Sidebar = ({ open, onClose }) => {
                 className="h-10 w-10 rounded-full object-cover ring-1 ring-black/10"
               />
             ) : (
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-[#1d1d1d] text-sm font-bold text-white">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--color-text)] text-sm font-bold text-white">
                 {(user?.displayName || user?.email || "A").charAt(0).toUpperCase()}
               </span>
             )}
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-[#1d1d1d]">
+              <p className="truncate text-sm font-semibold text-[var(--color-text)]">
                 {user?.displayName || "Admin"}
               </p>
               <p className="truncate text-xs text-neutral-500">{user?.email}</p>
@@ -166,7 +168,7 @@ export const Sidebar = ({ open, onClose }) => {
         <div className="space-y-1 border-t border-black/5 px-3 py-4">
           <NavLink
             to="/"
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-600 transition hover:bg-black/5 hover:text-[#1d1d1d]"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-600 transition hover:bg-black/5 hover:text-[var(--color-text)]"
           >
             <HomeIcon className="h-5 w-5 text-neutral-400" />
             View Store
@@ -177,7 +179,7 @@ export const Sidebar = ({ open, onClose }) => {
               signOut(auth);
               dispatch(clearWishlist());
             }}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[#e11d48] transition hover:bg-[#e11d48]/10"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-primary)] transition hover:bg-[var(--color-primary)]/10"
           >
             <ArrowLeftOnRectangleIcon className="h-5 w-5" />
             Logout

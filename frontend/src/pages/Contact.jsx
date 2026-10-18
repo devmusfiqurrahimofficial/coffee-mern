@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSendMessageMutation, useGetFeedbackQuery } from "../redux/api/messagesApi/messagesApi";
+import { useSection } from "../hooks/useSection";
 
 const formatDate = (value) => {
   if (!value) return "";
@@ -59,6 +60,7 @@ const FeedbackCard = ({ item }) => {
 
 const FeedbackSection = () => {
   const { data: feedback = [] } = useGetFeedbackQuery();
+  const content = useSection("contact", "form");
 
   if (feedback.length === 0) return null;
 
@@ -66,11 +68,11 @@ const FeedbackSection = () => {
     <section className="mx-auto mt-8 max-w-6xl">
       <div className="mb-6 text-center">
         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-700">
-          Community Voices
+          {content.feedbackEyebrow}
         </p>
-        <h2 className="mt-3 text-3xl font-bold text-slate-800">Customer Feedback</h2>
+        <h2 className="mt-3 text-3xl font-bold text-slate-800">{content.feedbackTitle}</h2>
         <p className="mt-2 text-slate-600">
-          Messages from our customers and answers from the Coffee Bloom team.
+          {content.feedbackDescription}
         </p>
       </div>
 
@@ -87,6 +89,10 @@ const Contact = () => {
   const [sendMessage, { isLoading }] = useSendMessageMutation();
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState({ type: "", text: "" });
+
+  const intro = useSection("contact", "intro");
+  const info = useSection("contact", "info");
+  const formContent = useSection("contact", "form");
 
   const updateField = (field) => (event) => {
     setForm((current) => ({ ...current, [field]: event.target.value }));
@@ -131,33 +137,33 @@ const Contact = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f2ea] px-5 py-10 text-slate-800">
+    <div className="min-h-screen bg-[var(--color-bg)] px-5 py-10 text-slate-800">
       <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <section className="rounded-[2rem] bg-white p-8 shadow-lg md:p-10">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-700">Contact Us</p>
-          <h1 className="mt-3 text-4xl font-bold">We would love to hear from you.</h1>
+          <p className="text-sm font-semibold uppercase tracking-[0.3em] text-amber-700">{intro.eyebrow}</p>
+          <h1 className="mt-3 text-4xl font-bold">{intro.title}</h1>
           <p className="mt-4 text-lg text-slate-600">
-            Whether you have a question about our menu, events, or special orders, we are here to help.
+            {intro.description}
           </p>
 
           <div className="mt-8 space-y-4">
             <div>
-              <h3 className="font-semibold">Visit Us</h3>
-              <p className="text-slate-600">Banasree,Dhaka-1219</p>
+              <h3 className="font-semibold">{info.visitTitle}</h3>
+              <p className="text-slate-600">{info.visitText}</p>
             </div>
             <div>
-              <h3 className="font-semibold">Call Us</h3>
-              <p className="text-slate-600">+8801632911828</p>
+              <h3 className="font-semibold">{info.callTitle}</h3>
+              <p className="text-slate-600">{info.callText}</p>
             </div>
             <div>
-              <h3 className="font-semibold">Email</h3>
-              <p className="text-slate-600">devmusfiqurrahimofficial@gmail.com</p>
+              <h3 className="font-semibold">{info.emailTitle}</h3>
+              <p className="text-slate-600">{info.emailText}</p>
             </div>
           </div>
         </section>
 
         <section className="rounded-[2rem] bg-[#2f241d] p-8 text-white shadow-lg md:p-10">
-          <h2 className="text-2xl font-semibold">Send a Message</h2>
+          <h2 className="text-2xl font-semibold">{formContent.formTitle}</h2>
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <input
               type="text"

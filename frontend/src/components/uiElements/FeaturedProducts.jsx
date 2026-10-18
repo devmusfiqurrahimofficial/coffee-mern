@@ -23,26 +23,26 @@ const FeaturedCard = ({ product }) => (
         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
       />
       {product.badge && (
-        <span className="absolute left-3 top-3 rounded-full bg-[#e11d48] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md">
+        <span className="absolute left-3 top-3 rounded-full bg-[var(--color-primary)] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md">
           {product.badge}
         </span>
       )}
       <div className="absolute right-3 top-3 flex gap-2">
-        <WishlistButton product={product} className="h-9 w-9 grid place-items-center rounded-full bg-white/90 backdrop-blur-sm border border-white/50 text-[#1d1d1d] transition-all hover:bg-[#e11d48] hover:text-white" />
+        <WishlistButton product={product} className="h-9 w-9 grid place-items-center rounded-full bg-white/90 backdrop-blur-sm border border-white/50 text-[var(--color-text)] transition-all hover:bg-[var(--color-primary)] hover:text-white" />
       </div>
     </div>
     <div className="flex flex-1 flex-col p-5">
       <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-neutral-400">
         {product.category}
       </p>
-      <h3 className="mt-1.5 font-serif text-base font-bold leading-tight text-[#1d1d1d] transition group-hover:text-[#e11d48]">
+      <h3 className="mt-1.5 font-serif text-base font-bold leading-tight text-[var(--color-text)] transition group-hover:text-[var(--color-primary)]">
         {product.name}
       </h3>
       <div className="mt-3 flex items-center gap-1">
         <>
           <StarIcon
             className={`h-3.5 w-3.5 ${
-              product.reviewCount > 0 ? "text-[#e11d48]" : "text-neutral-300"
+              product.reviewCount > 0 ? "text-[var(--color-primary)]" : "text-neutral-300"
             }`}
           />
           <span className="text-xs font-medium text-neutral-500">
@@ -55,7 +55,7 @@ const FeaturedCard = ({ product }) => (
           </span>
         </>
       </div>
-      <span className="mt-3 text-base font-bold text-[#1d1d1d]">
+      <span className="mt-3 text-base font-bold text-[var(--color-text)]">
         {currency(product.price)}
       </span>
     </div>
@@ -73,11 +73,11 @@ export default function FeaturedProducts() {
     <section className="px-4 py-12 md:px-10 max-w-[1400px] mx-auto md:py-16">
       <div className="mx-auto max-w-6xl">
         <header className="mb-12 text-center">
-          <p className="mb-1 text-[9px] font-bold tracking-[0.25em] uppercase text-[#f2354d]">
+          <p className="mb-1 text-[9px] font-bold tracking-[0.25em] uppercase text-[var(--color-accent)]">
             From our shop
           </p>
-          <h2 className="font-serif text-3xl font-black leading-[1.05] text-[#1d1d1d] md:text-5xl">
-            Fresh picks, <span className="text-[#e11d48]">handpicked</span> for you
+          <h2 className="font-serif text-3xl font-black leading-[1.05] text-[var(--color-text)] md:text-5xl">
+            Fresh picks, <span className="text-[var(--color-primary)]">handpicked</span> for you
           </h2>
         </header>
 
@@ -100,7 +100,7 @@ export default function FeaturedProducts() {
         <div className="mt-12 flex items-center justify-center">
           <Link
             to="/shop"
-            className="btn-primary"
+            className="btn-primary text-black/90 hover:text-white"
           >
             See More
           </Link>

@@ -27,7 +27,7 @@ export default function ProductCategoryCard({
 
       {/* Text */}
       <div className="absolute bottom-0 left-0 right-0 z-20 p-6 md:p-8">
-        <span className="inline-flex items-center gap-1.5 mb-3 px-3 py-1 rounded-full bg-white/20 backdrop-blur border border-white/30 text-[#e11d48]/90 text-xs font-bold uppercase tracking-wider">
+        <span className="inline-flex items-center gap-1.5 mb-3 px-3 py-1 rounded-full bg-white/20 backdrop-blur border border-white/30 text-[var(--color-primary)]/90 text-xs font-bold uppercase tracking-wider">
           Shop now
         </span>
         <h3 className="font-serif text-2xl font-black leading-tight text-white md:text-3xl">

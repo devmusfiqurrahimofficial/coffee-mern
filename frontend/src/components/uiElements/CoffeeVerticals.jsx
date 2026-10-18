@@ -1,39 +1,19 @@
-import leaf from '../../assets/image/leaf.png'
-import vertical1 from '../../assets/image/verticals-1.png'
-import vertical2 from '../../assets/image/verticals-2.png'
-import vertical3 from '../../assets/image/verticals-3.png'
-
-
-export default function CoffeeVerticals() {
-  const cards = [
-    {
-      title: "COFFEE ROASTER",
-      image: vertical1,
-      className: "md:row-span-2 min-h-[520px]",
-    },
-    {
-      title: "CAFE",
-      image: vertical2,
-      className: "min-h-[260px]",
-    },
-    {
-      title: "RETAIL",
-      image: vertical3,
-      className: "min-h-[260px]",
-    },
-  ];
-
+export default function CoffeeVerticals({ eyebrow, title, accent, cards }) {
   return (
     <section className="px-4 py-12 md:px-10 max-w-[1400px] mx-auto md:py-20">
       <div className="mx-auto max-w-6xl">
         <div className="mb-12 text-center">
-          <p className="mb-1 text-[9px] font-bold tracking-[0.25em] uppercase text-[#f2354d]">
-            Our verticals
-          </p>
-          <h2 className="font-serif text-3xl font-black leading-[1.05] text-[#1d1d1d] md:text-6xl">
-            Taking in mind every step of
-            <br />
-            the <span className="text-[#e11d48]">coffee journey</span>
+          {eyebrow && (
+            <p className="mb-1 text-[9px] font-bold tracking-[0.25em] uppercase text-[var(--color-accent)]">
+              {eyebrow}
+            </p>
+          )}
+          <h2 className="font-serif text-3xl font-black leading-[1.05] text-[var(--color-text)] md:text-6xl">
+            {accent ? title.split(new RegExp(`(${accent})`, "gi")).map((part, i) =>
+              part.toLowerCase() === accent.toLowerCase()
+                ? <span key={i} className="text-[var(--color-primary)]">{part}</span>
+                : <span key={i}>{part}</span>
+            ) : title}
           </h2>
         </div>
 
@@ -55,13 +35,15 @@ export default function CoffeeVerticals() {
                   <h3 className="font-serif text-2xl font-black leading-tight md:text-3xl">
                     {card.title}
                   </h3>
-                  <p className="mt-2 text-xs font-medium text-white/70 max-w-xs">
-                    Elevate your coffee experience
-                  </p>
+                  {card.subtitle && (
+                    <p className="mt-2 text-xs font-medium text-white/70 max-w-xs">
+                      {card.subtitle}
+                    </p>
+                  )}
                 </div>
                 <button
                   aria-label={`Explore ${card.title}`}
-                  className="grid h-10 w-10 place-items-center rounded-full bg-[#e11d48] text-white transition-all duration-300 hover:bg-[#c81a40] hover:shadow-lg hover:shadow-[#e11d48]/40 active:scale-95"
+                  className="grid h-10 w-10 place-items-center rounded-full bg-[var(--color-primary)] text-white transition-all duration-300 hover:bg-[var(--color-primary-hover)] hover:shadow-lg hover:shadow-[var(--color-primary)]/40 active:scale-95"
                 >
                   ›
                 </button>

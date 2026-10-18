@@ -356,6 +356,10 @@ async function run() {
     const blogCollection = db.collection("blogs");
     const blogCoverCollection = db.collection("blogCovers");
     const productImageCollection = db.collection("productImages");
+    // CMS content: pageContent holds one doc per page (home/about/...),
+    // contentImages holds dashboard-uploaded image blobs.
+    const pageContentCollection = db.collection("pageContent");
+    const contentImageCollection = db.collection("contentImages");
     const userCollection = db.collection("user");
     const orderCollection = db.collection("orders");
     const settingsCollection = db.collection("settings");
@@ -406,6 +410,25 @@ async function run() {
         res.send(Buffer.isBuffer(imageData) ? imageData : (imageData?.buffer || imageData));
       } catch (error) {
         console.error("Error serving product image:", error);
+        res.status(500).send({ error: "Failed to load image" });
+      }
+    });
+
+    // CMS images uploaded through the dashboard "Page Content" editor.
+    // Stored in MongoDB so the API also runs on read-only-filesystem hosts.
+    app.get("/images/content/:id", async (req, res) => {
+      try {
+        const image = await contentImageCollection.findOne({ _id: req.params.id });
+        if (!image) {
+          return res.status(404).send({ error: "Image not found" });
+        }
+        const imageData = image.data;
+        res.set("Content-Type", image.contentType || "application/octet-stream");
+        res.set("Cache-Control", "public, max-age=31536000, immutable");
+        res.set("Cross-Origin-Resource-Policy", "cross-origin");
+        res.send(Buffer.isBuffer(imageData) ? imageData : (imageData?.buffer || imageData));
+      } catch (error) {
+        console.error("Error serving content image:", error);
         res.status(500).send({ error: "Failed to load image" });
       }
     });
@@ -802,6 +825,17 @@ async function run() {
       deliveryPrices: DEFAULT_DELIVERY_PRICES,
     };
 
+    const serializeSettings = (settings = {}) => ({
+      storeName: settings.storeName || DEFAULT_SETTINGS.storeName,
+      supportEmail: settings.supportEmail || DEFAULT_SETTINGS.supportEmail,
+      phone: settings.phone || DEFAULT_SETTINGS.phone,
+      address: settings.address || DEFAULT_SETTINGS.address,
+      deliveryPrices: {
+        ...DEFAULT_DELIVERY_PRICES,
+        ...(settings.deliveryPrices || {}),
+      },
+    });
+
     const getDeliveryPrices = async () => {
       const settings = await settingsCollection.findOne({});
       return { ...DEFAULT_DELIVERY_PRICES, ...(settings?.deliveryPrices || {}) };
@@ -811,15 +845,8 @@ async function run() {
     app.get("/settings", async (req, res) => {
       try {
         const settings = await settingsCollection.findOne({});
-        // Only expose safe, storefront-relevant fields
-        const safeSettings = {
-          storeName: settings?.storeName || DEFAULT_SETTINGS.storeName,
-          supportEmail: settings?.supportEmail || DEFAULT_SETTINGS.supportEmail,
-          phone: settings?.phone || DEFAULT_SETTINGS.phone,
-          address: settings?.address || DEFAULT_SETTINGS.address,
-          deliveryPrices: settings?.deliveryPrices || DEFAULT_SETTINGS.deliveryPrices,
-        };
-        res.send(safeSettings);
+        // Only expose safe, storefront-relevant fields.
+        res.send(serializeSettings(settings));
       } catch (error) {
         console.error("Error fetching settings:", error);
         res.status(500).send({ error: "Failed to fetch settings" });
@@ -841,6 +868,7 @@ async function run() {
         try {
           const body = req.body || {};
           const update = {};
+          const existing = await settingsCollection.findOne({});
 
           if (body.storeName !== undefined) {
             if (!String(body.storeName).trim()) {
@@ -873,7 +901,6 @@ async function run() {
             return res.status(400).send({ error: "No settings to update" });
           }
 
-          const existing = await settingsCollection.findOne({});
           let saved;
           if (existing) {
             saved = await settingsCollection.findOneAndUpdate(
@@ -886,10 +913,170 @@ async function run() {
             await settingsCollection.insertOne(saved);
           }
 
-          res.send({ ...DEFAULT_SETTINGS, ...saved });
+          res.send(serializeSettings(saved));
         } catch (error) {
           console.error("Error updating settings:", error);
           res.status(500).send({ error: "Failed to update settings" });
+        }
+      }
+    );
+
+    // ----- Page content (CMS) -----
+    // One document per page key (home, about, contact, blog, footer).
+    // Doc shape: { _id: page, sections: { [sectionId]: { [field]: value } } }.
+    // Values are plain strings; image fields hold "content/<id>" references.
+    // The frontend merges these over its built-in defaults, so an empty or
+    // absent doc simply renders the original design.
+
+    const ALLOWED_CONTENT_PAGES = ["home", "about", "contact", "blog", "footer"];
+    const CONTENT_PAGE_PATTERN = /^[a-z][a-z0-9-]*$/;
+    const CONTENT_SECTION_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
+    const CONTENT_IMAGE_PATTERN = /^content\/[0-9a-f-]{36}$/;
+    const MAX_CONTENT_TEXT = 3000;
+
+    // Public: all saved page content. Image refs stay as "content/<id>";
+    // the frontend resolves them against API_BASE_URL.
+    app.get("/content", async (req, res) => {
+      try {
+        const docs = await pageContentCollection.find({}).toArray();
+        const content = {};
+        for (const doc of docs) {
+          if (ALLOWED_CONTENT_PAGES.includes(doc._id)) {
+            content[doc._id] = doc.sections || {};
+          }
+        }
+        res.send(content);
+      } catch (error) {
+        console.error("Error fetching page content:", error);
+        res.status(500).send({ error: "Failed to fetch page content" });
+      }
+    });
+
+    // Admin: replace the sections of one page. Only string values are
+    // accepted; unknown pages/sections/fields are rejected so the DB never
+    // accumulates junk.
+    app.put(
+      "/content/:page",
+      authenticateUser,
+      requireAdmin,
+      param("page")
+        .isString()
+        .matches(CONTENT_PAGE_PATTERN)
+        .withMessage("Invalid page key")
+        .bail()
+        .custom((value) => ALLOWED_CONTENT_PAGES.includes(value))
+        .withMessage("Unknown page"),
+      body("sections").isObject().withMessage("sections must be an object"),
+      handleValidationErrors,
+      async (req, res) => {
+        const page = req.params.page;
+        const sections = req.body.sections;
+
+        const cleaned = {};
+        for (const [sectionId, fields] of Object.entries(sections)) {
+          if (!CONTENT_SECTION_PATTERN.test(sectionId)) {
+            return res.status(400).send({ error: `Invalid section key: ${sectionId}` });
+          }
+          if (!fields || typeof fields !== "object" || Array.isArray(fields)) {
+            return res
+              .status(400)
+              .send({ error: `Section ${sectionId} must be an object` });
+          }
+          const cleanFields = {};
+          for (const [field, value] of Object.entries(fields)) {
+            if (!CONTENT_SECTION_PATTERN.test(field)) {
+              return res.status(400).send({ error: `Invalid field key: ${field}` });
+            }
+            if (typeof value !== "string") {
+              return res
+                .status(400)
+                .send({ error: `${sectionId}.${field} must be a string` });
+            }
+            const trimmed = value.trim();
+            if (trimmed.length > MAX_CONTENT_TEXT) {
+              return res.status(400).send({
+                error: `${sectionId}.${field} is too long (max ${MAX_CONTENT_TEXT} characters)`,
+              });
+            }
+            // Image fields are either empty (built-in default) or point at
+            // a dashboard-uploaded blob.
+            if (
+              trimmed &&
+              trimmed.startsWith("content/") &&
+              !CONTENT_IMAGE_PATTERN.test(trimmed)
+            ) {
+              return res.status(400).send({
+                error: `${sectionId}.${field} has an invalid image reference`,
+              });
+            }
+            cleanFields[field] = trimmed;
+          }
+          cleaned[sectionId] = cleanFields;
+        }
+
+        try {
+          await pageContentCollection.updateOne(
+            { _id: page },
+            { $set: { sections: cleaned, updatedAt: new Date() } },
+            { upsert: true }
+          );
+          res.send({ page, sections: cleaned });
+        } catch (error) {
+          console.error("Error saving page content:", error);
+          res.status(500).send({ error: "Failed to save page content" });
+        }
+      }
+    );
+
+    // Admin: upload a page-content image (the dashboard "import" file field).
+    // Same safety rules as product images: type allow-list + magic-byte sniff.
+    app.post(
+      "/content/image",
+      authenticateUser,
+      requireAdmin,
+      express.raw({ type: "image/*", limit: "5mb" }),
+      async (req, res) => {
+        const contentType = (req.get("content-type") || "")
+          .split(";")[0]
+          .toLowerCase();
+        const fileExtensions = {
+          "image/jpeg": "jpg",
+          "image/png": "png",
+          "image/webp": "webp",
+          "image/gif": "gif",
+        };
+        const extension = fileExtensions[contentType];
+
+        if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+          return res.status(400).send({ error: "An image file is required." });
+        }
+        if (!extension) {
+          return res.status(415).send({
+            error: "Content images must be JPEG, PNG, WebP, or GIF files.",
+          });
+        }
+        const magic = req.body.subarray(0, 12);
+        const looksImage =
+          (magic[0] === 0xff && magic[1] === 0xd8 && magic[2] === 0xff) || // JPEG
+          (magic[0] === 0x89 && magic[1] === 0x50 && magic[2] === 0x4e && magic[3] === 0x47) || // PNG
+          (magic[0] === 0x52 && magic[1] === 0x49 && magic[2] === 0x46 && magic[3] === 0x46) || // WEBP (RIFF)
+          (magic[0] === 0x47 && magic[1] === 0x49 && magic[2] === 0x46); // GIF
+        if (!looksImage) {
+          return res.status(415).send({ error: "File content is not a valid image." });
+        }
+
+        const imageId = randomUUID();
+        try {
+          await contentImageCollection.insertOne({
+            _id: imageId,
+            data: req.body,
+            contentType,
+            createdAt: new Date(),
+          });
+          return res.status(201).send({ image: `content/${imageId}` });
+        } catch (error) {
+          console.error("Error saving content image:", error);
+          return res.status(500).send({ error: "Unable to save the image." });
         }
       }
     );

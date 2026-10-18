@@ -74,7 +74,7 @@ const OrderDetailModal = ({ order, onClose }) => {
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400">
               Order details
             </p>
-            <h2 className="mt-1 font-serif text-xl font-black text-[#1d1d1d]">
+            <h2 className="mt-1 font-serif text-xl font-black text-[var(--color-text)]">
               #{order.orderNumber}
             </h2>
           </div>
@@ -98,7 +98,7 @@ const OrderDetailModal = ({ order, onClose }) => {
               <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-400">
                 Customer
               </h3>
-              <p className="mt-2 text-sm font-semibold text-[#1d1d1d]">
+              <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">
                 {customer.firstName} {customer.lastName}
               </p>
               <p className="mt-0.5 text-sm text-neutral-600">{customer.email}</p>
@@ -108,7 +108,7 @@ const OrderDetailModal = ({ order, onClose }) => {
               <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-400">
                 Delivery
               </h3>
-              <p className="mt-2 text-sm font-semibold text-[#1d1d1d]">
+              <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">
                 {DELIVERY_LABELS[order.deliveryMethod] || order.deliveryMethod}
               </p>
               <p className="mt-0.5 text-sm text-neutral-600">
@@ -136,7 +136,7 @@ const OrderDetailModal = ({ order, onClose }) => {
               <tbody className="divide-y divide-black/5">
                 {items.map((item, index) => (
                   <tr key={`${item.name}-${index}`}>
-                    <td className="px-4 py-2.5 text-[#1d1d1d]">
+                    <td className="px-4 py-2.5 text-[var(--color-text)]">
                       {item.name}
                       {item.productId && (
                         <span className="ml-2 text-[10px] text-neutral-400">
@@ -150,7 +150,7 @@ const OrderDetailModal = ({ order, onClose }) => {
                     <td className="px-4 py-2.5 text-center text-neutral-600">
                       {item.quantity}
                     </td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-[#1d1d1d]">
+                    <td className="px-4 py-2.5 text-right font-semibold text-[var(--color-text)]">
                       {currency((Number(item.price) || 0) * (Number(item.quantity) || 0))}
                     </td>
                   </tr>
@@ -164,7 +164,7 @@ const OrderDetailModal = ({ order, onClose }) => {
             <div className="space-y-1.5 text-sm text-neutral-600">
               <p className="flex items-center justify-between">
                 <span>Payment</span>
-                <span className="font-semibold text-[#1d1d1d]">
+                <span className="font-semibold text-[var(--color-text)]">
                   {payment.method === "cod"
                     ? "Cash on Delivery"
                     : `Card${payment.cardLast4 ? ` •••• ${payment.cardLast4}` : ""}${
@@ -174,13 +174,13 @@ const OrderDetailModal = ({ order, onClose }) => {
               </p>
               <p className="flex items-center justify-between">
                 <span>Items</span>
-                <span className="font-semibold text-[#1d1d1d]">
+                <span className="font-semibold text-[var(--color-text)]">
                   {order.totalQuantity ?? items.length}
                 </span>
               </p>
               <p className="flex items-center justify-between">
                 <span>Placed on</span>
-                <span className="font-semibold text-[#1d1d1d]">
+                <span className="font-semibold text-[var(--color-text)]">
                   {formatDate(order.createdAt)}
                 </span>
               </p>
@@ -188,17 +188,17 @@ const OrderDetailModal = ({ order, onClose }) => {
             <div className="space-y-1.5 rounded-2xl border border-black/5 bg-[#f3efe7]/60 p-4 text-sm">
               <p className="flex items-center justify-between text-neutral-600">
                 <span>Subtotal</span>
-                <span className="font-semibold text-[#1d1d1d]">{currency(subtotal)}</span>
+                <span className="font-semibold text-[var(--color-text)]">{currency(subtotal)}</span>
               </p>
               <p className="flex items-center justify-between text-neutral-600">
                 <span>Shipping</span>
-                <span className="font-semibold text-[#1d1d1d]">
+                <span className="font-semibold text-[var(--color-text)]">
                   {shipping === 0 ? "Free" : currency(shipping)}
                 </span>
               </p>
               <p className="flex items-center justify-between border-t border-black/10 pt-1.5">
-                <span className="font-bold text-[#1d1d1d]">Total</span>
-                <span className="font-serif text-lg font-black text-[#e11d48]">
+                <span className="font-bold text-[var(--color-text)]">Total</span>
+                <span className="font-serif text-lg font-black text-[var(--color-primary)]">
                   {currency(total)}
                 </span>
               </p>
@@ -206,7 +206,7 @@ const OrderDetailModal = ({ order, onClose }) => {
           </div>
 
           {error && (
-            <p role="alert" className="rounded-xl border border-[#e11d48]/30 bg-[#e11d48]/10 px-4 py-2.5 text-sm font-medium text-[#c81a40]">
+            <p role="alert" className="rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-4 py-2.5 text-sm font-medium text-[var(--color-primary-hover)]">
               {error}
             </p>
           )}
@@ -216,7 +216,7 @@ const OrderDetailModal = ({ order, onClose }) => {
             <button
               type="button"
               onClick={() => downloadOrderChalan(order)}
-              className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-[#1d1d1d] transition hover:border-[#1d1d1d]"
+              className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)]"
             >
               <DocumentArrowDownIcon className="h-4 w-4" />
               Chalan (PDF)
@@ -227,7 +227,7 @@ const OrderDetailModal = ({ order, onClose }) => {
                   type="button"
                   onClick={() => changeStatus("rejected")}
                   disabled={isLoading}
-                  className="flex items-center gap-2 rounded-full border border-[#e11d48]/30 bg-white px-5 py-2.5 text-sm font-semibold text-[#e11d48] transition hover:bg-[#e11d48] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-full border border-[var(--color-primary)]/30 bg-white px-5 py-2.5 text-sm font-semibold text-[var(--color-primary)] transition hover:bg-[var(--color-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <TrashIcon className="h-4 w-4" />
                   Reject Order
@@ -236,7 +236,7 @@ const OrderDetailModal = ({ order, onClose }) => {
                   type="button"
                   onClick={() => changeStatus("accepted")}
                   disabled={isLoading}
-                  className="flex items-center gap-2 rounded-full bg-[#1d1d1d] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#e11d48] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-full bg-[var(--color-text)] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <CheckCircleIcon className="h-4 w-4" />
                   Accept Order
@@ -248,7 +248,7 @@ const OrderDetailModal = ({ order, onClose }) => {
                 type="button"
                 onClick={() => changeStatus("out_for_delivery")}
                 disabled={isLoading}
-                className="flex items-center gap-2 rounded-full bg-[#e11d48] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <TruckIcon className="h-4 w-4" />
                 Out for Delivery
@@ -259,7 +259,7 @@ const OrderDetailModal = ({ order, onClose }) => {
                 type="button"
                 onClick={() => changeStatus("delivered")}
                 disabled={isLoading}
-                className="flex items-center gap-2 rounded-full bg-[#1d1d1d] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-2 rounded-full bg-[var(--color-text)] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <CheckCircleIcon className="h-4 w-4" />
                 Mark as Delivered
@@ -268,7 +268,7 @@ const OrderDetailModal = ({ order, onClose }) => {
             {(status === "rejected" || status === "delivered") && (
               <p className="flex items-center gap-2 text-sm font-medium text-neutral-500">
                 {status === "rejected" ? (
-                  <XCircleIcon className="h-5 w-5 text-[#e11d48]" />
+                  <XCircleIcon className="h-5 w-5 text-[var(--color-primary)]" />
                 ) : (
                   <CheckCircleIcon className="h-5 w-5 text-green-600" />
                 )}

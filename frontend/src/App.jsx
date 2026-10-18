@@ -20,6 +20,7 @@ import { ManageCustomers } from './pages/Dashboard/DashboardUIElements/ManageCus
 import { ManageMessages } from './pages/Dashboard/DashboardUIElements/ManageMessages'
 import AdminChat from './pages/Dashboard/DashboardUIElements/AdminChat'
 import { StoreSettings } from './pages/Dashboard/DashboardUIElements/StoreSettings'
+import { ManageContent } from './pages/Dashboard/DashboardUIElements/ManageContent'
 import Login from './pages/Auth/Login'
 import AdminLogin from './pages/Auth/AdminLogin'
 import Shop from './pages/Shop'
@@ -30,8 +31,7 @@ import Blog from './pages/Blog'
 import BlogDetail from './pages/BlogDetail'
 import CheckoutPage from './pages/CheckoutPage'
 function App() {
-
-       const [cartOpen, setCartOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   
   return (
     <BrowserRouter >
@@ -69,6 +69,7 @@ function App() {
           <Route path="/dashboard/messages" element={<ManageMessages />} />
           <Route path="/dashboard/chats" element={<AdminChat />} />
           <Route path="/dashboard/settings" element={<StoreSettings />} />
+          <Route path="/dashboard/content" element={<ManageContent />} />
           <Route path="/dashboard/add-product" element={<AddProduct />} />
        </Route>
 

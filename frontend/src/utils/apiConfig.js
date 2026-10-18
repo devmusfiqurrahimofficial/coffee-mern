@@ -34,6 +34,10 @@ export const toImageUrl = (image) => {
       return image;
     }
   }
+  // CMS page-content image ("content/<id>").
+  if (image.startsWith("content/")) {
+    return `${API_BASE_URL}/images/${image}`;
+  }
   // Stored reference like "products/<id>" or a bare id -> serve via /images/products/:id.
   const id = image.startsWith("products/") ? image.slice("products/".length) : image;
   return `${API_BASE_URL}/images/products/${id}`;

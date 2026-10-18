@@ -13,10 +13,10 @@ export const Welcome = () => {
 
   return (
     <header className="mb-8">
-      <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#e11d48]">
+      <p className="text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-primary)]">
         {formatToday()}
       </p>
-      <h1 className="mt-2 font-serif text-3xl font-black leading-tight text-[#1d1d1d] md:text-4xl">
+      <h1 className="mt-2 font-serif text-3xl font-black leading-tight text-[var(--color-text)] md:text-4xl">
         Welcome back, {user?.displayName || "Admin"}
       </h1>
       <p className="mt-2 text-sm text-neutral-500">

@@ -79,7 +79,7 @@ const formatExpiry = (value) => {
 };
 
 const inputClass =
-  "w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]";
+  "w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]";
 
 const Stepper = ({ current }) => (
   <ol className="flex flex-wrap items-center gap-3">
@@ -91,18 +91,18 @@ const Stepper = ({ current }) => (
           <div
             className={`flex items-center gap-2.5 rounded-full border px-4 py-2 transition ${
               isActive
-                ? "border-[#1d1d1d] bg-[#1d1d1d] text-white"
+                ? "border-[var(--color-text)] bg-[var(--color-text)] text-white"
                 : isDone
-                ? "border-[#e11d48] bg-[#e11d48]/10 text-[#e11d48]"
+                ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
                 : "border-black/10 bg-white text-neutral-400"
             }`}
           >
             <span
               className={`grid h-6 w-6 place-items-center rounded-full text-xs font-bold ${
                 isActive
-                  ? "bg-white text-[#1d1d1d]"
+                  ? "bg-white text-[var(--color-text)]"
                   : isDone
-                  ? "bg-[#e11d48] text-white"
+                  ? "bg-[var(--color-primary)] text-white"
                   : "bg-black/5 text-neutral-400"
               }`}
             >
@@ -133,7 +133,7 @@ const Field = ({ label, icon: Icon, error, children }) => (
     </label>
     {children}
     {error && (
-      <p className="mt-1 flex items-center gap-1 text-xs font-medium text-[#e11d48]">
+      <p className="mt-1 flex items-center gap-1 text-xs font-medium text-[var(--color-primary)]">
         <ExclamationCircleIcon className="h-3.5 w-3.5" />
         {error}
       </p>
@@ -144,7 +144,7 @@ const Field = ({ label, icon: Icon, error, children }) => (
 const OrderSummary = ({ items, subtotal, shipping, total }) => (
   <aside className="sticky top-8 overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
     <div className="border-b border-black/10 px-6 py-5">
-      <h2 className="font-serif text-xl font-black text-[#1d1d1d]">
+      <h2 className="font-serif text-xl font-black text-[var(--color-text)]">
         Order Summary
       </h2>
       <p className="text-xs text-neutral-500">
@@ -162,10 +162,10 @@ const OrderSummary = ({ items, subtotal, shipping, total }) => (
           />
           <div className="flex flex-1 flex-col">
             <div className="flex items-start justify-between gap-2">
-              <h4 className="text-sm font-semibold leading-tight text-[#1d1d1d]">
+              <h4 className="text-sm font-semibold leading-tight text-[var(--color-text)]">
                 {item.name}
               </h4>
-              <span className="text-sm font-bold text-[#1d1d1d]">
+              <span className="text-sm font-bold text-[var(--color-text)]">
                 {currency(item.price * item.quantity)}
               </span>
             </div>
@@ -180,19 +180,19 @@ const OrderSummary = ({ items, subtotal, shipping, total }) => (
     <div className="space-y-2 border-t border-black/10 px-6 py-5 text-sm">
       <div className="flex items-center justify-between text-neutral-600">
         <span>Subtotal</span>
-        <span className="font-semibold text-[#1d1d1d]">{currency(subtotal)}</span>
+        <span className="font-semibold text-[var(--color-text)]">{currency(subtotal)}</span>
       </div>
       <div className="flex items-center justify-between text-neutral-600">
         <span>Shipping</span>
-        <span className="font-semibold text-[#1d1d1d]">
+        <span className="font-semibold text-[var(--color-text)]">
           {shipping === 0 ? "Free" : currency(shipping)}
         </span>
       </div>
       <div className="mt-3 flex items-center justify-between border-t border-black/10 pt-3">
-        <span className="font-serif text-lg font-bold text-[#1d1d1d]">
+        <span className="font-serif text-lg font-bold text-[var(--color-text)]">
           Total
         </span>
-        <span className="font-serif text-2xl font-black text-[#1d1d1d]">
+        <span className="font-serif text-2xl font-black text-[var(--color-text)]">
           {currency(total)}
         </span>
       </div>
@@ -208,7 +208,7 @@ const OrderSummary = ({ items, subtotal, shipping, total }) => (
 const EmptyCart = () => (
   <div className="mx-auto flex max-w-md flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-black/10 bg-white/60 py-24 text-center">
     <ShoppingCartIcon className="h-12 w-12 text-neutral-300" />
-    <h1 className="font-serif text-2xl font-black text-[#1d1d1d]">
+    <h1 className="font-serif text-2xl font-black text-[var(--color-text)]">
       Your cart is empty
     </h1>
     <p className="text-sm text-neutral-500">
@@ -216,7 +216,7 @@ const EmptyCart = () => (
     </p>
     <Link
       to="/shop"
-      className="rounded-full bg-[#e11d48] px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40]"
+      className="rounded-full bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)]"
     >
       Browse Products
     </Link>
@@ -461,20 +461,20 @@ const CheckoutPage = () => {
       <div className="mx-auto max-w-[1200px]">
         <header className="mb-8">
           <nav className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-neutral-400">
-            <Link to="/" className="transition hover:text-[#1d1d1d]">
+            <Link to="/" className="transition hover:text-[var(--color-text)]">
               Home
             </Link>
             <span className="text-neutral-300">/</span>
-            <Link to="/shop" className="transition hover:text-[#1d1d1d]">
+            <Link to="/shop" className="transition hover:text-[var(--color-text)]">
               Shop
             </Link>
             <span className="text-neutral-300">/</span>
-            <span className="text-[#e11d48]">Checkout</span>
+            <span className="text-[var(--color-primary)]">Checkout</span>
           </nav>
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#e11d48]">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-primary)]">
             Almost there
           </p>
-          <h1 className="mt-2 font-serif text-4xl font-black leading-tight text-[#1d1d1d] md:text-5xl">
+          <h1 className="mt-2 font-serif text-4xl font-black leading-tight text-[var(--color-text)] md:text-5xl">
             Checkout
           </h1>
         </header>
@@ -486,7 +486,7 @@ const CheckoutPage = () => {
         <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
           <div>
             {submitError && (
-              <div className="mb-6 flex items-center gap-2 rounded-xl border border-[#e11d48]/30 bg-[#e11d48]/10 px-4 py-3 text-sm font-medium text-[#c81a40]">
+              <div className="mb-6 flex items-center gap-2 rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-4 py-3 text-sm font-medium text-[var(--color-primary-hover)]">
                 <ExclamationCircleIcon className="h-5 w-5 flex-shrink-0" />
                 {submitError}
               </div>
@@ -496,11 +496,11 @@ const CheckoutPage = () => {
               <div className="space-y-6">
                 <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm md:p-8">
                   <div className="mb-5 flex items-center gap-3">
-                    <div className="grid h-10 w-10 place-items-center rounded-full bg-[#1d1d1d] text-white">
+                    <div className="grid h-10 w-10 place-items-center rounded-full bg-[var(--color-text)] text-white">
                       <UserIcon className="h-5 w-5" />
                     </div>
                     <div>
-                      <h2 className="font-serif text-xl font-bold text-[#1d1d1d]">
+                      <h2 className="font-serif text-xl font-bold text-[var(--color-text)]">
                         Contact Details
                       </h2>
                       <p className="text-xs text-neutral-500">
@@ -559,11 +559,11 @@ const CheckoutPage = () => {
 
                 <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm md:p-8">
                   <div className="mb-5 flex items-center gap-3">
-                    <div className="grid h-10 w-10 place-items-center rounded-full bg-[#1d1d1d] text-white">
+                    <div className="grid h-10 w-10 place-items-center rounded-full bg-[var(--color-text)] text-white">
                       <MapPinIcon className="h-5 w-5" />
                     </div>
                     <div>
-                      <h2 className="font-serif text-xl font-bold text-[#1d1d1d]">
+                      <h2 className="font-serif text-xl font-bold text-[var(--color-text)]">
                         Shipping Address
                       </h2>
                       <p className="text-xs text-neutral-500">
@@ -647,11 +647,11 @@ const CheckoutPage = () => {
 
                 <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm md:p-8">
                   <div className="mb-5 flex items-center gap-3">
-                    <div className="grid h-10 w-10 place-items-center rounded-full bg-[#1d1d1d] text-white">
+                    <div className="grid h-10 w-10 place-items-center rounded-full bg-[var(--color-text)] text-white">
                       <TruckIcon className="h-5 w-5" />
                     </div>
                     <div>
-                      <h2 className="font-serif text-xl font-bold text-[#1d1d1d]">
+                      <h2 className="font-serif text-xl font-bold text-[var(--color-text)]">
                         Delivery Method
                       </h2>
                       <p className="text-xs text-neutral-500">
@@ -670,20 +670,20 @@ const CheckoutPage = () => {
                           onClick={() => setDeliveryMethod(option.id)}
                           className={`flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition ${
                             isActive
-                              ? "border-[#e11d48] bg-[#e11d48]/5"
+                              ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5"
                               : "border-black/10 bg-white hover:border-black/30"
                           }`}
                         >
                           <div className="flex w-full items-center justify-between">
                             <option.Icon
                               className={`h-6 w-6 ${
-                                isActive ? "text-[#e11d48]" : "text-neutral-400"
+                                isActive ? "text-[var(--color-primary)]" : "text-neutral-400"
                               }`}
                             />
                             <span
                               className={`grid h-5 w-5 place-items-center rounded-full border-2 ${
                                 isActive
-                                  ? "border-[#e11d48] bg-[#e11d48]"
+                                  ? "border-[var(--color-primary)] bg-[var(--color-primary)]"
                                   : "border-black/20"
                               }`}
                             >
@@ -692,7 +692,7 @@ const CheckoutPage = () => {
                               )}
                             </span>
                           </div>
-                          <span className="text-sm font-semibold text-[#1d1d1d]">
+                          <span className="text-sm font-semibold text-[var(--color-text)]">
                             {option.label}
                           </span>
                           <span className="text-xs text-neutral-500">
@@ -700,7 +700,7 @@ const CheckoutPage = () => {
                           </span>
                           <span
                             className={`text-xs font-bold ${
-                              isActive ? "text-[#e11d48]" : "text-neutral-500"
+                              isActive ? "text-[var(--color-primary)]" : "text-neutral-500"
                             }`}
                           >
                             {option.price === 0 ? "Free" : currency(option.price)}
@@ -714,7 +714,7 @@ const CheckoutPage = () => {
                 <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                   <Link
                     to="/shop"
-                    className="flex items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-6 py-3.5 text-sm font-semibold text-[#1d1d1d] transition hover:border-[#e11d48] hover:text-[#e11d48]"
+                    className="flex items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-6 py-3.5 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
                   >
                     <ArrowLeftIcon className="h-4 w-4" />
                     Back to Shop
@@ -722,7 +722,7 @@ const CheckoutPage = () => {
                   <button
                     type="button"
                     onClick={handleNext}
-                    className="flex items-center justify-center gap-2 rounded-full bg-[#e11d48] px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40]"
+                    className="flex items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)]"
                   >
                     Next
                     <ArrowRightIcon className="h-4 w-4" />
@@ -733,11 +733,11 @@ const CheckoutPage = () => {
               <div className="space-y-6">
                 <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm md:p-8">
                   <div className="mb-5 flex items-center gap-3">
-                    <div className="grid h-10 w-10 place-items-center rounded-full bg-[#1d1d1d] text-white">
+                    <div className="grid h-10 w-10 place-items-center rounded-full bg-[var(--color-text)] text-white">
                       <CreditCardIcon className="h-5 w-5" />
                     </div>
                     <div>
-                      <h2 className="font-serif text-xl font-bold text-[#1d1d1d]">
+                      <h2 className="font-serif text-xl font-bold text-[var(--color-text)]">
                         Payment Method
                       </h2>
                       <p className="text-xs text-neutral-500">
@@ -756,21 +756,21 @@ const CheckoutPage = () => {
                           onClick={() => setPaymentMethod(method.id)}
                           className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition ${
                             isActive
-                              ? "border-[#e11d48] bg-[#e11d48]/5"
+                              ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5"
                               : "border-black/10 bg-white hover:border-black/30"
                           }`}
                         >
                           <div
                             className={`grid h-11 w-11 flex-shrink-0 place-items-center rounded-full ${
                               isActive
-                                ? "bg-[#e11d48] text-white"
+                                ? "bg-[var(--color-primary)] text-white"
                                 : "bg-[#f3efe7] text-neutral-500"
                             }`}
                           >
                             <method.Icon className="h-5 w-5" />
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm font-semibold text-[#1d1d1d]">
+                            <p className="text-sm font-semibold text-[var(--color-text)]">
                               {method.label}
                             </p>
                             <p className="text-xs text-neutral-500">
@@ -780,7 +780,7 @@ const CheckoutPage = () => {
                           <span
                             className={`grid h-5 w-5 flex-shrink-0 place-items-center rounded-full border-2 ${
                               isActive
-                                ? "border-[#e11d48] bg-[#e11d48]"
+                                ? "border-[var(--color-primary)] bg-[var(--color-primary)]"
                                 : "border-black/20"
                             }`}
                           >
@@ -797,11 +797,11 @@ const CheckoutPage = () => {
                 {paymentMethod === "card" ? (
                   <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm md:p-8">
                     <div className="mb-5 flex items-center justify-between">
-                      <h2 className="font-serif text-xl font-bold text-[#1d1d1d]">
+                      <h2 className="font-serif text-xl font-bold text-[var(--color-text)]">
                         Card Details
                       </h2>
                       {cardBrand && (
-                        <span className="rounded-full bg-[#f3efe7] px-3 py-1 text-xs font-semibold text-[#1d1d1d]">
+                        <span className="rounded-full bg-[#f3efe7] px-3 py-1 text-xs font-semibold text-[var(--color-text)]">
                           {cardBrand}
                         </span>
                       )}
@@ -871,11 +871,11 @@ const CheckoutPage = () => {
                 ) : (
                   <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm md:p-8">
                     <div className="flex items-start gap-4 rounded-2xl bg-[#f3efe7] p-5">
-                      <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-[#1d1d1d] text-white">
+                      <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-[var(--color-text)] text-white">
                         <BanknotesIcon className="h-5 w-5" />
                       </div>
                       <div>
-                        <h3 className="font-serif text-lg font-bold text-[#1d1d1d]">
+                        <h3 className="font-serif text-lg font-bold text-[var(--color-text)]">
                           Pay with cash on delivery
                         </h3>
                         <p className="mt-1 text-sm text-neutral-600">
@@ -892,7 +892,7 @@ const CheckoutPage = () => {
                   <button
                     type="button"
                     onClick={handleBack}
-                    className="flex items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-6 py-3.5 text-sm font-semibold text-[#1d1d1d] transition hover:border-[#e11d48] hover:text-[#e11d48]"
+                    className="flex items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-6 py-3.5 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
                   >
                     <ArrowLeftIcon className="h-4 w-4" />
                     Back
@@ -901,7 +901,7 @@ const CheckoutPage = () => {
                     type="button"
                     onClick={handlePlaceOrder}
                     disabled={isPlacing}
-                    className="flex items-center justify-center gap-2 rounded-full bg-[#e11d48] px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isPlacing ? (
                       "Placing Order..."

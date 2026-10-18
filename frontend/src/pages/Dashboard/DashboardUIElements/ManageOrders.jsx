@@ -194,7 +194,7 @@ export const ManageOrders = ({ status }) => {
             type="button"
             onClick={() => exportOrdersCsv(visibleOrders)}
             disabled={visibleOrders.length === 0}
-            className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#1d1d1d] transition hover:border-[#1d1d1d] disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-text)] transition hover:border-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ArrowDownTrayIcon className="h-4 w-4" />
             Export CSV
@@ -221,7 +221,7 @@ export const ManageOrders = ({ status }) => {
             onClick={() => navigate(tab.to)}
             className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
               tab.status === status
-                ? "border-[#1d1d1d] bg-[#1d1d1d] text-white"
+                ? "border-[var(--color-text)] bg-[var(--color-text)] text-white"
                 : "border-black/10 bg-white text-neutral-600 hover:border-black/30"
             }`}
           >
@@ -239,13 +239,13 @@ export const ManageOrders = ({ status }) => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by order no., name, email…"
-            className="w-full rounded-full border border-black/10 bg-white py-2.5 pl-10 pr-4 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]"
+            className="w-full rounded-full border border-black/10 bg-white py-2.5 pl-10 pr-4 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]"
           />
         </div>
         <select
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
-          className="rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-[#1d1d1d] outline-none transition focus:border-[#e11d48]"
+          className="rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
         >
           {DATE_FILTERS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -256,7 +256,7 @@ export const ManageOrders = ({ status }) => {
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          className="rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-[#1d1d1d] outline-none transition focus:border-[#e11d48]"
+          className="rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -266,7 +266,7 @@ export const ManageOrders = ({ status }) => {
         </select>
         <span className="text-xs text-neutral-500">
           {visibleOrders.length} orders ·{" "}
-          <span className="font-bold text-[#e11d48]">{formatMoney(statusTotal)}</span>
+          <span className="font-bold text-[var(--color-primary)]">{formatMoney(statusTotal)}</span>
         </span>
       </div>
 
@@ -277,14 +277,14 @@ export const ManageOrders = ({ status }) => {
       )}
 
       {isError && (
-        <p className="rounded-2xl border border-[#e11d48]/30 bg-[#e11d48]/10 px-5 py-10 text-center text-sm text-[#c81a40]">
+        <p className="rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-5 py-10 text-center text-sm text-[var(--color-primary-hover)]">
           Failed to load orders. Is the server running on port 5000?
         </p>
       )}
 
       {!isLoading && !isError && visibleOrders.length === 0 && (
         <div className="rounded-2xl border border-dashed border-black/10 bg-white/60 px-6 py-16 text-center">
-          <p className="font-serif text-xl text-[#1d1d1d]">No orders here</p>
+          <p className="font-serif text-xl text-[var(--color-text)]">No orders here</p>
           <p className="mt-2 text-sm text-neutral-500">
             Orders will appear here as soon as customers check out.
           </p>
@@ -315,11 +315,11 @@ export const ManageOrders = ({ status }) => {
 
                   return (
                     <tr key={order._id} className="transition hover:bg-black/[0.02]">
-                      <td className="px-5 py-3 font-semibold text-[#1d1d1d]">
+                      <td className="px-5 py-3 font-semibold text-[var(--color-text)]">
                         #{order.orderNumber}
                       </td>
                       <td className="px-5 py-3">
-                        <p className="font-medium text-[#1d1d1d]">
+                        <p className="font-medium text-[var(--color-text)]">
                           {order.customer?.firstName} {order.customer?.lastName}
                         </p>
                         <p className="text-xs text-neutral-500">{order.customer?.email}</p>
@@ -328,7 +328,7 @@ export const ManageOrders = ({ status }) => {
                         {formatDate(order.createdAt)}
                       </td>
                       <td className="px-5 py-3 text-neutral-600">{itemCount}</td>
-                      <td className="px-5 py-3 font-bold text-[#1d1d1d]">
+                      <td className="px-5 py-3 font-bold text-[var(--color-text)]">
                         {formatMoney(order.total)}
                       </td>
                       <td className="px-5 py-3">
@@ -343,7 +343,7 @@ export const ManageOrders = ({ status }) => {
                                 onClick={() => changeStatus(order, "rejected")}
                                 disabled={isUpdating}
                                 aria-label={`Reject order ${order.orderNumber}`}
-                                className="rounded-full border border-[#e11d48]/30 p-2 text-[#e11d48] transition hover:bg-[#e11d48] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                className="rounded-full border border-[var(--color-primary)]/30 p-2 text-[var(--color-primary)] transition hover:bg-[var(--color-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 <TrashIcon className="h-4 w-4" />
                               </button>
@@ -352,7 +352,7 @@ export const ManageOrders = ({ status }) => {
                                 onClick={() => changeStatus(order, "accepted")}
                                 disabled={isUpdating}
                                 aria-label={`Accept order ${order.orderNumber}`}
-                                className="rounded-full border border-black/10 p-2 text-[#1d1d1d] transition hover:bg-[#1d1d1d] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                className="rounded-full border border-black/10 p-2 text-[var(--color-text)] transition hover:bg-[var(--color-text)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 <CheckCircleIcon className="h-4 w-4" />
                               </button>
@@ -361,7 +361,7 @@ export const ManageOrders = ({ status }) => {
                           <button
                             type="button"
                             onClick={() => setSelected(order)}
-                            className="flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3.5 py-2 text-xs font-semibold text-[#1d1d1d] transition hover:border-[#1d1d1d]"
+                            className="flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3.5 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)]"
                           >
                             <EyeIcon className="h-4 w-4" />
                             Details

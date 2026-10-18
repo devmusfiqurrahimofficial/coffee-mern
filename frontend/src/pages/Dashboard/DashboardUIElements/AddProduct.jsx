@@ -119,7 +119,7 @@ export const AddProduct = () => {
             value={form.name}
             onChange={updateField("name")}
             placeholder="Ethiopian Yirgacheffe"
-            className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]"
+            className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]"
           />
         </div>
 
@@ -132,7 +132,7 @@ export const AddProduct = () => {
               id="product-category"
               value={form.category}
               onChange={updateField("category")}
-              className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition focus:border-[#e11d48]"
+              className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
             >
               {CATEGORIES.map((category) => (
                 <option key={category} value={category}>
@@ -153,7 +153,7 @@ export const AddProduct = () => {
               value={form.priceBdt}
               onChange={updateField("priceBdt")}
               placeholder="1250"
-              className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]"
+              className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]"
             />
             <p className="mt-1 text-xs text-neutral-400">
               Customers see {formatBdt(priceBdtNumber)}
@@ -172,7 +172,7 @@ export const AddProduct = () => {
               value={form.weight}
               onChange={updateField("weight")}
               placeholder="250g"
-              className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]"
+              className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]"
             />
           </div>
           <div>
@@ -185,7 +185,7 @@ export const AddProduct = () => {
               value={form.badge}
               onChange={updateField("badge")}
               placeholder="New"
-              className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]"
+              className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]"
             />
           </div>
         </div>
@@ -207,7 +207,7 @@ export const AddProduct = () => {
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 onChange={handleImageChange}
                 disabled={isBusy}
-                className="block w-full text-sm text-neutral-500 file:mr-3 file:rounded-full file:border-0 file:bg-[#1d1d1d] file:px-4 file:py-2 file:text-xs file:font-semibold file:uppercase file:tracking-wider file:text-white hover:file:bg-[#e11d48]"
+                className="block w-full text-sm text-neutral-500 file:mr-3 file:rounded-full file:border-0 file:bg-[var(--color-text)] file:px-4 file:py-2 file:text-xs file:font-semibold file:uppercase file:tracking-wider file:text-white hover:file:bg-[var(--color-primary)]"
               />
             </div>
           </div>
@@ -223,7 +223,7 @@ export const AddProduct = () => {
               step="0.1"
               value={form.rating}
               onChange={updateField("rating")}
-              className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition focus:border-[#e11d48]"
+              className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
             />
           </div>
         </div>
@@ -238,12 +238,12 @@ export const AddProduct = () => {
             value={form.description}
             onChange={updateField("description")}
             placeholder="Tell customers about this product…"
-            className="w-full resize-none rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]"
+            className="w-full resize-none rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]"
           />
         </div>
 
         {error && (
-          <p role="alert" className="rounded-xl border border-[#e11d48]/30 bg-[#e11d48]/10 px-4 py-3 text-sm font-medium text-[#c81a40]">
+          <p role="alert" className="rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-4 py-3 text-sm font-medium text-[var(--color-primary-hover)]">
             {error}
           </p>
         )}
@@ -252,14 +252,14 @@ export const AddProduct = () => {
           <button
             type="button"
             onClick={() => navigate("/dashboard/products")}
-            className="rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-[#1d1d1d] transition hover:border-[#1d1d1d]"
+            className="rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)]"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isBusy}
-            className="flex items-center justify-center gap-2 rounded-full bg-[#e11d48] px-7 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] px-7 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <PlusCircleIcon className="h-5 w-5" />
             {isUploading ? "Uploading…" : isLoading ? "Adding…" : "Add Product"}

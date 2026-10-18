@@ -11,7 +11,7 @@ import {
 import PageHeader from "./PageHeader";
 
 const inputClass =
-  "w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]";
+  "w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]";
 
 export const StoreSettings = () => {
   const { data: settings, isLoading } = useGetSettingsQuery();
@@ -99,8 +99,8 @@ export const StoreSettings = () => {
         className="max-w-2xl space-y-6 rounded-3xl border border-black/5 bg-white p-6 shadow-sm md:p-8"
       >
         <section className="space-y-4">
-          <h2 className="flex items-center gap-2 font-serif text-lg font-bold text-[#1d1d1d]">
-            <Cog6ToothIcon className="h-5 w-5 text-[#e11d48]" />
+          <h2 className="flex items-center gap-2 font-serif text-lg font-bold text-[var(--color-text)]">
+            <Cog6ToothIcon className="h-5 w-5 text-[var(--color-primary)]" />
             Store information
           </h2>
           <div>
@@ -161,7 +161,7 @@ export const StoreSettings = () => {
 
         <section className="space-y-4 border-t border-black/10 pt-6">
           <div>
-            <h2 className="font-serif text-lg font-bold text-[#1d1d1d]">
+            <h2 className="font-serif text-lg font-bold text-[var(--color-text)]">
               Delivery charges (৳)
             </h2>
             <p className="text-xs text-neutral-500">
@@ -217,7 +217,7 @@ export const StoreSettings = () => {
             className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium ${
               message.type === "success"
                 ? "border border-green-200 bg-green-50 text-green-700"
-                : "border border-[#e11d48]/30 bg-[#e11d48]/10 text-[#c81a40]"
+                : "border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 text-[var(--color-primary-hover)]"
             }`}
           >
             {message.type === "success" ? (
@@ -233,7 +233,7 @@ export const StoreSettings = () => {
           <button
             type="submit"
             disabled={isSaving}
-            className="rounded-full bg-[#e11d48] px-7 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full bg-[var(--color-primary)] px-7 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSaving ? "Saving…" : "Save Settings"}
           </button>

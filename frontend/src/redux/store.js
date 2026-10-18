@@ -8,6 +8,7 @@ import wishlistReducer from "./features/wishlistSlice/wishlistSlice";
 import { userApi } from "./api/userApi/userApi";
 import { ordersApi } from "./api/ordersApi/ordersApi";
 import { settingsApi } from "./api/settingsApi/settingsApi";
+import { contentApi } from "./api/contentApi/contentApi";
 import { messagesApi } from "./api/messagesApi/messagesApi";
 import chatReducer from "./features/chatSlice/chatSlice";
 import { chatApi } from "./api/chatApi/chatApi";
@@ -24,6 +25,7 @@ const store = configureStore({
     [userApi.reducerPath]: userApi.reducer,
     [ordersApi.reducerPath]: ordersApi.reducer,
     [settingsApi.reducerPath]: settingsApi.reducer,
+    [contentApi.reducerPath]: contentApi.reducer,
     [messagesApi.reducerPath]: messagesApi.reducer,
     [chatApi.reducerPath]: chatApi.reducer,
   },
@@ -35,6 +37,7 @@ const store = configureStore({
       userApi.middleware,
       ordersApi.middleware,
       settingsApi.middleware,
+      contentApi.middleware,
       messagesApi.middleware,
       chatApi.middleware
     ),

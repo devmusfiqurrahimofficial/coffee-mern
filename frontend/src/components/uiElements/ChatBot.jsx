@@ -377,7 +377,7 @@ const ChatBot = () => {
             zIndex: 40,
             cursor: isDragging ? "grabbing" : "grab",
           }}
-          className="fixed bottom-1 right-1 z-50 h-10 w-10 rounded-full bg-[#e11d48] flex items-center justify-center p-2 text-white shadow-xl shadow-black/20 transition hover:bg-[#c81a40] md:h-auto md:w-auto md:rounded-full md:px-4 md:py-2.5 md:text-sm md:font-semibold md:gap-2"
+          className="fixed bottom-1 right-1 z-50 h-10 w-10 rounded-full bg-[var(--color-primary)] flex items-center justify-center p-2 text-white shadow-xl shadow-black/20 transition hover:bg-[var(--color-primary-hover)] md:h-auto md:w-auto md:rounded-full md:px-4 md:py-2.5 md:text-sm md:font-semibold md:gap-2"
         >
           <UserCircleIcon className="h-6 w-6" />
           <span className="hidden md:inline">Support Chat</span>
@@ -408,11 +408,11 @@ const ChatBot = () => {
         >
           {/* Header */}
           <header
-            className="flex items-center gap-3 bg-[#1d1d1d] px-5 py-4 text-white"
+            className="flex items-center gap-3 bg-[var(--color-text)] px-5 py-4 text-white"
             onMouseDown={handleDragStart}
             style={{ cursor: isDragging ? "grabbing" : "grab" }}
           >
-            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-[#e11d48]">
+            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-[var(--color-primary)]">
               <UserCircleIcon className="h-5 w-5" />
             </span>
             <div className="flex-1">
@@ -456,8 +456,8 @@ const ChatBot = () => {
                 <div
                   className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ${
                     item.sender === "user" || item.sender === "customer"
-                      ? "rounded-br-md bg-[#e11d48] text-white"
-                      : "rounded-bl-md bg-white text-[#1d1d1d]"
+                      ? "rounded-br-md bg-[var(--color-primary)] text-white"
+                      : "rounded-bl-md bg-white text-[var(--color-text)]"
                   }`}
                 >
                   <p className="whitespace-pre-line">{item.text}</p>
@@ -477,7 +477,7 @@ const ChatBot = () => {
           <div ref={adminMessagesEndRef} />
             {isAdminTyping && (
               <div className="flex justify-start">
-                <div className="max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm rounded-bl-md bg-white text-[#1d1d1d]">
+                <div className="max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm rounded-bl-md bg-white text-[var(--color-text)]">
                   <p className="text-neutral-400">Admin is typing…</p>
                 </div>
               </div>
@@ -503,14 +503,14 @@ const ChatBot = () => {
               value={input}
               onChange={(event) => dispatch(setInput(event.target.value))}
               placeholder="Type your message to support…"
-              className="w-full bg-transparent text-sm text-[#1d1d1d] outline-none placeholder:text-neutral-400"
+              className="w-full bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-neutral-400"
               autoFocus
             />
             <button
               type="submit"
               disabled={!input.trim() || !chatSessionId}
               aria-label="Send message"
-              className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full transition disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-400 bg-[#e11d48] text-white hover:bg-[#c81a40]"
+              className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full transition disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-400 bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)]"
             >
               <PaperAirplaneIcon className="h-4 w-4" />
             </button>

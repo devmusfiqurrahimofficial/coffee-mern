@@ -57,7 +57,7 @@ const EditBlogModal = ({ blog, onClose, onSaved }) => {
     >
       <div className="w-full max-w-2xl rounded-3xl border border-black/5 bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-black/10 px-6 py-4">
-          <h2 className="font-serif text-xl font-bold text-[#1d1d1d]">Edit Blog</h2>
+          <h2 className="font-serif text-xl font-bold text-[var(--color-text)]">Edit Blog</h2>
           <button
             type="button"
             onClick={onClose}
@@ -78,7 +78,7 @@ const EditBlogModal = ({ blog, onClose, onSaved }) => {
               type="text"
               value={form.title}
               onChange={updateField("title")}
-              className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition focus:border-[#e11d48]"
+              className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
             />
           </div>
 
@@ -91,7 +91,7 @@ const EditBlogModal = ({ blog, onClose, onSaved }) => {
                 id="edit-blog-category"
                 value={form.category}
                 onChange={updateField("category")}
-                className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition focus:border-[#e11d48]"
+                className="w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
               >
                 {CATEGORIES.map((category) => (
                   <option key={category} value={category}>
@@ -110,7 +110,7 @@ const EditBlogModal = ({ blog, onClose, onSaved }) => {
                 value={form.image}
                 onChange={updateField("image")}
                 placeholder="https://coffee-mern.onrender.com/images/…"
-                className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition focus:border-[#e11d48]"
+                className="w-full rounded-xl border border-black/10 px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
               />
             </div>
           </div>
@@ -124,12 +124,12 @@ const EditBlogModal = ({ blog, onClose, onSaved }) => {
               rows={10}
               value={form.story}
               onChange={updateField("story")}
-              className="w-full resize-none rounded-xl border border-black/10 px-4 py-2.5 text-sm leading-7 text-[#1d1d1d] outline-none transition focus:border-[#e11d48]"
+              className="w-full resize-none rounded-xl border border-black/10 px-4 py-2.5 text-sm leading-7 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
             />
           </div>
 
           {error && (
-            <p role="alert" className="rounded-xl border border-[#e11d48]/30 bg-[#e11d48]/10 px-4 py-2.5 text-sm font-medium text-[#c81a40]">
+            <p role="alert" className="rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-4 py-2.5 text-sm font-medium text-[var(--color-primary-hover)]">
               {error}
             </p>
           )}
@@ -138,14 +138,14 @@ const EditBlogModal = ({ blog, onClose, onSaved }) => {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-[#1d1d1d] transition hover:border-[#1d1d1d]"
+              className="rounded-full border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="rounded-full bg-[#e11d48] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? "Saving…" : "Save Changes"}
             </button>

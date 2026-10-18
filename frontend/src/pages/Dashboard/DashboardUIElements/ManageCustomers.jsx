@@ -71,13 +71,13 @@ export const ManageCustomers = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by name, email, phone, city…"
-            className="w-full rounded-full border border-black/10 bg-white py-2.5 pl-10 pr-4 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]"
+            className="w-full rounded-full border border-black/10 bg-white py-2.5 pl-10 pr-4 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]"
           />
         </div>
         <p className="text-sm text-neutral-500">
-          <span className="font-bold text-[#1d1d1d]">{filtered.length}</span> customers
+          <span className="font-bold text-[var(--color-text)]">{filtered.length}</span> customers
           · {" "}
-          <span className="font-bold text-[#e11d48]">{formatMoney(totalSpent)}</span>{" "}
+          <span className="font-bold text-[var(--color-primary)]">{formatMoney(totalSpent)}</span>{" "}
           lifetime value
         </p>
       </div>
@@ -89,14 +89,14 @@ export const ManageCustomers = () => {
       )}
 
       {isError && (
-        <p className="rounded-2xl border border-[#e11d48]/30 bg-[#e11d48]/10 px-5 py-10 text-center text-sm text-[#c81a40]">
+        <p className="rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-5 py-10 text-center text-sm text-[var(--color-primary-hover)]">
           Failed to load customers. Is the server running on port 5000?
         </p>
       )}
 
       {!isLoading && !isError && filtered.length === 0 && (
         <div className="rounded-2xl border border-dashed border-black/10 bg-white/60 px-6 py-16 text-center">
-          <p className="font-serif text-xl text-[#1d1d1d]">No customers yet</p>
+          <p className="font-serif text-xl text-[var(--color-text)]">No customers yet</p>
           <p className="mt-2 text-sm text-neutral-500">
             Customers appear here once they place an order.
           </p>
@@ -124,11 +124,11 @@ export const ManageCustomers = () => {
                     <tr className="transition hover:bg-black/[0.02]">
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
-                          <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-[#1d1d1d] text-xs font-bold text-white">
+                          <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-[var(--color-text)] text-xs font-bold text-white">
                             {(customer.name || customer.email || "?").charAt(0).toUpperCase()}
                           </span>
                           <div className="min-w-0">
-                            <p className="truncate font-semibold text-[#1d1d1d]">
+                            <p className="truncate font-semibold text-[var(--color-text)]">
                               {customer.name || "Unknown"}
                             </p>
                             <p className="truncate text-xs text-neutral-500">
@@ -140,7 +140,7 @@ export const ManageCustomers = () => {
                       <td className="px-5 py-3 text-neutral-600">{customer.phone || "—"}</td>
                       <td className="px-5 py-3 text-neutral-600">{customer.city || "—"}</td>
                       <td className="px-5 py-3 text-neutral-600">{customer.orders}</td>
-                      <td className="px-5 py-3 font-bold text-[#e11d48]">
+                      <td className="px-5 py-3 font-bold text-[var(--color-primary)]">
                         {formatMoney(customer.spent)}
                       </td>
                       <td className="px-5 py-3 text-neutral-600">
@@ -152,7 +152,7 @@ export const ManageCustomers = () => {
                           onClick={() =>
                             setExpanded(expanded === customer.email ? null : customer.email)
                           }
-                          className="inline-flex items-center gap-1.5 rounded-full border border-black/10 px-3.5 py-1.5 text-xs font-semibold text-[#1d1d1d] transition hover:border-[#1d1d1d]"
+                          className="inline-flex items-center gap-1.5 rounded-full border border-black/10 px-3.5 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)]"
                         >
                           {expanded === customer.email ? (
                             <>
@@ -178,19 +178,19 @@ export const ManageCustomers = () => {
                                 key={order._id}
                                 className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white px-4 py-2.5"
                               >
-                                <span className="text-sm font-semibold text-[#1d1d1d]">
+                                <span className="text-sm font-semibold text-[var(--color-text)]">
                                   #{order.orderNumber}
                                 </span>
                                 <span className="text-xs text-neutral-500">
                                   {formatDate(order.createdAt)}
                                 </span>
-                                <span className="text-sm font-bold text-[#1d1d1d]">
+                                <span className="text-sm font-bold text-[var(--color-text)]">
                                   {formatMoney(order.total)}
                                 </span>
                                 <OrderStatusBadge status={order.status} />
                                 <Link
                                   to="/dashboard/orders"
-                                  className="text-xs font-semibold text-[#e11d48] hover:underline"
+                                  className="text-xs font-semibold text-[var(--color-primary)] hover:underline"
                                 >
                                   Open
                                 </Link>

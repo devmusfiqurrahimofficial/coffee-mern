@@ -42,7 +42,7 @@ const Tooltip = ({ children, text, placement = "top" }) => {
         createPortal(
           <div
             style={tooltipStyles}
-            className="z-50 px-2.5 py-1.5 rounded bg-[#1d1d1d] text-white text-xs font-medium whitespace-nowrap shadow-lg pointer-events-none"
+            className="z-50 px-2.5 py-1.5 rounded bg-[var(--color-text)] text-white text-xs font-medium whitespace-nowrap shadow-lg pointer-events-none"
           >
             {text}
           </div>,

@@ -41,7 +41,7 @@ const ReplyMessageModal = ({ message, onClose, onSaved }) => {
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400">
               Reply as admin
             </p>
-            <h2 className="mt-1 truncate font-serif text-lg font-bold text-[#1d1d1d]">
+            <h2 className="mt-1 truncate font-serif text-lg font-bold text-[var(--color-text)]">
               {message.name}
             </h2>
             <p className="truncate text-xs text-neutral-500">{message.email}</p>
@@ -77,12 +77,12 @@ const ReplyMessageModal = ({ message, onClose, onSaved }) => {
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
                 placeholder="Thank you for reaching out…"
-                className="w-full resize-none rounded-xl border border-black/10 px-4 py-2.5 text-sm leading-7 text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]"
+                className="w-full resize-none rounded-xl border border-black/10 px-4 py-2.5 text-sm leading-7 text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]"
               />
             </div>
 
             {error && (
-              <p role="alert" className="rounded-xl border border-[#e11d48]/30 bg-[#e11d48]/10 px-4 py-2.5 text-sm font-medium text-[#c81a40]">
+              <p role="alert" className="rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-4 py-2.5 text-sm font-medium text-[var(--color-primary-hover)]">
                 {error}
               </p>
             )}
@@ -91,14 +91,14 @@ const ReplyMessageModal = ({ message, onClose, onSaved }) => {
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-[#1d1d1d] transition hover:border-[#1d1d1d]"
+                className="rounded-full border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="rounded-full bg-[#e11d48] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40] disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-full bg-[var(--color-primary)] px-6 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoading ? "Sending…" : "Send Reply"}
               </button>

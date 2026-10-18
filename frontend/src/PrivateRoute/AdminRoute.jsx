@@ -8,7 +8,7 @@ export const AdminRoute = ({ children }) => {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen items-center justify-center p-5 text-[#1d1d1d]">
+            <div className="flex min-h-screen items-center justify-center p-5 text-[var(--color-text)]">
                 Loading...
             </div>
         );
@@ -21,20 +21,20 @@ export const AdminRoute = ({ children }) => {
     if (!isAdminEmail(user.email)) {
         return (
             <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#EAE7DE] p-5 text-center">
-                <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#e11d48]">
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-primary)]">
                     Restricted area
                 </p>
-                <h1 className="font-serif text-4xl font-black text-[#1d1d1d]">
+                <h1 className="font-serif text-4xl font-black text-[var(--color-text)]">
                     Admin access only
                 </h1>
                 <p className="max-w-md text-sm text-neutral-500">
                     The dashboard is limited to administrators. You are signed in as{" "}
-                    <span className="font-semibold text-[#1d1d1d]">{user.email}</span>, which
+                    <span className="font-semibold text-[var(--color-text)]">{user.email}</span>, which
                     does not have admin permission.
                 </p>
                 <Link
                     to="/"
-                    className="mt-2 rounded-full bg-[#1d1d1d] px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#e11d48]"
+                    className="mt-2 rounded-full bg-[var(--color-text)] px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary)]"
                 >
                     Back to Home
                 </Link>

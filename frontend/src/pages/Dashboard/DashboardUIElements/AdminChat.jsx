@@ -177,7 +177,7 @@ const AdminChat = () => {
         <div className="text-xs text-neutral-500">
           {chats.length} active chat{chats.length !== 1 ? "s" : ""}
           {unreadCount > 0 && (
-            <span className="ml-2 text-[#e11d48] font-medium">
+            <span className="ml-2 text-[var(--color-primary)] font-medium">
               {unreadCount} unread
             </span>
           )}
@@ -204,14 +204,14 @@ const AdminChat = () => {
                   <div
                     key={chat._id || chat.id}
                     onClick={() => selectSession(chat)}
-                    className={`cursor-pointer p-3 rounded-lg transition ${isActive ? "bg-[#e11d48]/10 border border-[#e11d48]/30" : "hover:bg-neutral-100"} border border-transparent`}
+                    className={`cursor-pointer p-3 rounded-lg transition ${isActive ? "bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30" : "hover:bg-neutral-100"} border border-transparent`}
                   >
                     <div className="flex justify-between items-start mb-1">
                       <span className="text-sm font-medium text-neutral-800">
                         {chat.customerName || "Customer"}
                       </span>
                       {unread > 0 && (
-                        <span className="text-[10px] bg-[#e11d48] text-white px-1.5 py-0.5 rounded-full">
+                        <span className="text-[10px] bg-[var(--color-primary)] text-white px-1.5 py-0.5 rounded-full">
                           {unread}
                         </span>
                       )}
@@ -255,7 +255,7 @@ const AdminChat = () => {
                 <button
                   onClick={resolveChat}
                   disabled={activeChat?.status === "resolved"}
-                  className="text-[10px] font-medium text-[#e11d48] hover:underline disabled:text-neutral-400"
+                  className="text-[10px] font-medium text-[var(--color-primary)] hover:underline disabled:text-neutral-400"
                 >
                   Resolve Chat
                 </button>
@@ -272,7 +272,7 @@ const AdminChat = () => {
                     className={`flex ${msg.sender === "admin" ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[80%] p-3 rounded-2xl ${msg.sender === "admin" ? "bg-[#e11d48] text-white rounded-bl-none" : "bg-[#f3f4f6] text-neutral-800 rounded-br-none"}`}
+                      className={`max-w-[80%] p-3 rounded-2xl ${msg.sender === "admin" ? "bg-[var(--color-primary)] text-white rounded-bl-none" : "bg-[#f3f4f6] text-neutral-800 rounded-br-none"}`}
                     >
                       <p className="text-sm whitespace-pre-line">{msg.text}</p>
                       <p className="mt-1 text-[10px] opacity-70">
@@ -298,12 +298,12 @@ const AdminChat = () => {
                   value={adminInput}
                   onChange={(e) => dispatch(setAdminInput(e.target.value))}
                   placeholder="Type your reply…"
-                  className="w-full bg-transparent text-sm text-[#1d1d1d] outline-none placeholder:text-neutral-400"
+                  className="w-full bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-neutral-400"
                 />
                 <button
                   type="submit"
                   disabled={!adminInput.trim()}
-                  className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-[#e11d48] text-white transition hover:bg-[#c81a40] disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-400"
+                  className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-[var(--color-primary)] text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-400"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

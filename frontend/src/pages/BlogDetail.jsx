@@ -45,7 +45,7 @@ function AuthorAvatar({ author, photoURL }) {
   }
 
   return (
-    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#ff4d4d] text-sm font-bold text-white">
+    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary)] text-sm font-bold text-white">
       {initials(author)}
     </span>
   );
@@ -78,7 +78,7 @@ export default function BlogDetail() {
     return (
       <main className="min-h-screen bg-[#f4f1ea] px-4 py-24 text-center">
         <p className="text-lg font-semibold text-gray-800">{message}</p>
-        <Link to="/blog" className="mt-5 inline-block font-bold text-[#ff4d4d] hover:underline">
+        <Link to="/blog" className="mt-5 inline-block font-bold text-[var(--color-primary)] hover:underline">
           ← Back to all stories
         </Link>
       </main>
@@ -88,7 +88,7 @@ export default function BlogDetail() {
   return (
     <main className="min-h-screen bg-[#f4f1ea] py-12 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-8 lg:px-12">
-        <Link to="/blog" className="text-sm font-bold text-[#ff4d4d] hover:underline">
+        <Link to="/blog" className="text-sm font-bold text-[var(--color-primary)] hover:underline">
           ← All stories
         </Link>
 
@@ -104,7 +104,7 @@ export default function BlogDetail() {
 
             <div className="p-6 sm:p-10">
               <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-bold uppercase tracking-[0.14em]">
-                <span className="text-[#ff4d4d]">{blog.category || "Community"}</span>
+                <span className="text-[var(--color-primary)]">{blog.category || "Community"}</span>
                 <span className="text-gray-400">{formatDateTime(blog.createdAt)}</span>
               </div>
               <h1 className="text-3xl font-extrabold italic leading-tight text-gray-900 sm:text-5xl">
@@ -127,7 +127,7 @@ export default function BlogDetail() {
 
           <aside>
             <div className="rounded-2xl bg-white p-6 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#ff4d4d]">Keep reading</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-primary)]">Keep reading</p>
               <h2 className="mt-2 text-2xl font-extrabold italic text-gray-900">Featured stories</h2>
 
               <div className="mt-6 space-y-5">
@@ -143,10 +143,10 @@ export default function BlogDetail() {
                   >
                     {featured.image && <img src={featured.image} alt="" className="h-32 w-full object-cover" />}
                     <div className="p-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#ff4d4d]">
+                      <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--color-primary)]">
                         {featured.category || "Community"}
                       </p>
-                      <h3 className="mt-2 font-extrabold leading-snug text-gray-900 group-hover:text-[#d93636]">
+                      <h3 className="mt-2 font-extrabold leading-snug text-gray-900 group-hover:text-[var(--color-primary-hover)]">
                         {featured.title}
                       </h3>
                       <p className="mt-2 text-xs text-gray-500">{formatDateTime(featured.createdAt)}</p>
@@ -155,7 +155,7 @@ export default function BlogDetail() {
                 ))}
               </div>
 
-              <Link to="/blog" className="mt-7 inline-block text-sm font-bold text-[#ff4d4d] hover:underline">
+              <Link to="/blog" className="mt-7 inline-block text-sm font-bold text-[var(--color-primary)] hover:underline">
                 See all stories →
               </Link>
             </div>

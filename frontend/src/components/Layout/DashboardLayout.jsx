@@ -15,7 +15,7 @@ const DashboardLayout = () => {
           type="button"
           onClick={() => setSidebarOpen(true)}
           aria-label="Open menu"
-          className="rounded-full p-1.5 text-[#1d1d1d] transition hover:bg-black/5"
+          className="rounded-full p-1.5 text-[var(--color-text)] transition hover:bg-black/5"
         >
           <Bars3Icon className="h-6 w-6" />
         </button>
@@ -24,7 +24,7 @@ const DashboardLayout = () => {
         </Link>
         <Link
           to="/"
-          className="text-xs font-semibold uppercase tracking-wider text-neutral-500 transition hover:text-[#e11d48]"
+          className="text-xs font-semibold uppercase tracking-wider text-neutral-500 transition hover:text-[var(--color-primary)]"
         >
           Store
         </Link>

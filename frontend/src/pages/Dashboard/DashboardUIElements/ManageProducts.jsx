@@ -76,7 +76,7 @@ export const ManageProducts = () => {
         actions={
           <Link
             to="/dashboard/products/add"
-            className="flex items-center gap-2 rounded-full bg-[#e11d48] px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40]"
+            className="flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)]"
           >
             <PlusCircleIcon className="h-4 w-4" />
             Add Product
@@ -96,7 +96,7 @@ export const ManageProducts = () => {
               setPage(1);
             }}
             placeholder="Search products…"
-            className="w-full rounded-full border border-black/10 bg-white py-2.5 pl-10 pr-4 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]"
+            className="w-full rounded-full border border-black/10 bg-white py-2.5 pl-10 pr-4 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]"
           />
         </div>
         <select
@@ -105,7 +105,7 @@ export const ManageProducts = () => {
             setCategory(e.target.value);
             setPage(1);
           }}
-          className="rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-[#1d1d1d] outline-none transition focus:border-[#e11d48]"
+          className="rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
         >
           {categories.map((option) => (
             <option key={option} value={option}>
@@ -124,7 +124,7 @@ export const ManageProducts = () => {
           className={`mb-5 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium ${
             message.type === "success"
               ? "border border-green-200 bg-green-50 text-green-700"
-              : "border border-[#e11d48]/30 bg-[#e11d48]/10 text-[#c81a40]"
+              : "border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 text-[var(--color-primary-hover)]"
           }`}
         >
           <ExclamationCircleIcon className="h-4 w-4" />
@@ -139,14 +139,14 @@ export const ManageProducts = () => {
       )}
 
       {isError && (
-        <p className="rounded-2xl border border-[#e11d48]/30 bg-[#e11d48]/10 px-5 py-10 text-center text-sm text-[#c81a40]">
+        <p className="rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-5 py-10 text-center text-sm text-[var(--color-primary-hover)]">
           Failed to load products. Is the server running on port 5000?
         </p>
       )}
 
       {!isLoading && !isError && products.length === 0 && (
         <div className="rounded-2xl border border-dashed border-black/10 bg-white/60 px-6 py-16 text-center">
-          <p className="font-serif text-xl text-[#1d1d1d]">No products yet</p>
+          <p className="font-serif text-xl text-[var(--color-text)]">No products yet</p>
           <p className="mt-2 text-sm text-neutral-500">
             Add your first product to start selling.
           </p>
@@ -177,11 +177,11 @@ export const ManageProducts = () => {
                           className="h-11 w-11 flex-shrink-0 rounded-xl border border-black/5 object-cover"
                         />
                         <div className="min-w-0">
-                          <p className="truncate font-semibold text-[#1d1d1d]">
+                          <p className="truncate font-semibold text-[var(--color-text)]">
                             {product.name}
                           </p>
                           {product.badge && (
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#e11d48]">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
                               {product.badge}
                             </span>
                           )}
@@ -189,7 +189,7 @@ export const ManageProducts = () => {
                       </div>
                     </td>
                     <td className="px-5 py-3 text-neutral-600">{product.category}</td>
-                    <td className="px-5 py-3 font-bold text-[#1d1d1d]">
+                    <td className="px-5 py-3 font-bold text-[var(--color-text)]">
                       {formatBdt(product.price)}
                     </td>
                     <td className="px-5 py-3 text-neutral-600">
@@ -200,7 +200,7 @@ export const ManageProducts = () => {
                         <button
                           type="button"
                           onClick={() => setEditing(product)}
-                          className="flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3.5 py-2 text-xs font-semibold text-[#1d1d1d] transition hover:border-[#1d1d1d]"
+                          className="flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3.5 py-2 text-xs font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)]"
                         >
                           <PencilSquareIcon className="h-4 w-4" />
                           Edit
@@ -209,7 +209,7 @@ export const ManageProducts = () => {
                           type="button"
                           onClick={() => handleDelete(product)}
                           disabled={isDeleting}
-                          className="flex items-center gap-1.5 rounded-full border border-[#e11d48]/30 bg-white px-3.5 py-2 text-xs font-semibold text-[#e11d48] transition hover:bg-[#e11d48] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex items-center gap-1.5 rounded-full border border-[var(--color-primary)]/30 bg-white px-3.5 py-2 text-xs font-semibold text-[var(--color-primary)] transition hover:bg-[var(--color-primary)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <TrashIcon className="h-4 w-4" />
                           Delete
@@ -235,7 +235,7 @@ export const ManageProducts = () => {
               onClick={() => setPage((value) => Math.max(1, value - 1))}
               disabled={safePage === 1}
               aria-label="Previous page"
-              className="grid h-9 w-9 place-items-center rounded-full border border-black/10 bg-white text-neutral-500 transition enabled:hover:border-[#e11d48] enabled:hover:text-[#e11d48] disabled:cursor-not-allowed disabled:opacity-40"
+              className="grid h-9 w-9 place-items-center rounded-full border border-black/10 bg-white text-neutral-500 transition enabled:hover:border-[var(--color-primary)] enabled:hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ChevronLeftIcon className="h-4 w-4" />
             </button>
@@ -244,7 +244,7 @@ export const ManageProducts = () => {
               onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
               disabled={safePage === totalPages}
               aria-label="Next page"
-              className="grid h-9 w-9 place-items-center rounded-full border border-black/10 bg-white text-neutral-500 transition enabled:hover:border-[#e11d48] enabled:hover:text-[#e11d48] disabled:cursor-not-allowed disabled:opacity-40"
+              className="grid h-9 w-9 place-items-center rounded-full border border-black/10 bg-white text-neutral-500 transition enabled:hover:border-[var(--color-primary)] enabled:hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ChevronRightIcon className="h-4 w-4" />
             </button>

@@ -17,14 +17,14 @@ const OrderConfirmation = ({ order, onDone }) => {
         <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-green-100">
           <CheckCircleIcon className="h-10 w-10 text-green-600" />
         </div>
-        <h1 className="mt-6 font-serif text-3xl font-black text-[#1d1d1d] md:text-4xl">
+        <h1 className="mt-6 font-serif text-3xl font-black text-[var(--color-text)] md:text-4xl">
           Order Confirmed!
         </h1>
         <p className="mt-2 text-sm text-neutral-500">
           Thank you{customer.firstName ? `, ${customer.firstName}` : ""}! Your
           order has been placed successfully. A confirmation email is on its way
           to{" "}
-          <span className="font-semibold text-[#1d1d1d]">
+          <span className="font-semibold text-[var(--color-text)]">
             {customer.email || "your inbox"}
           </span>
           .
@@ -33,19 +33,19 @@ const OrderConfirmation = ({ order, onDone }) => {
         <dl className="mt-8 divide-y divide-black/10 rounded-2xl border border-black/10 text-left text-sm">
           <div className="flex items-center justify-between px-5 py-4">
             <dt className="text-neutral-500">Order number</dt>
-            <dd className="font-bold text-[#1d1d1d]">
+            <dd className="font-bold text-[var(--color-text)]">
               {order?.orderNumber || "—"}
             </dd>
           </div>
           <div className="flex items-center justify-between px-5 py-4">
             <dt className="text-neutral-500">Items</dt>
-            <dd className="font-semibold text-[#1d1d1d]">
+            <dd className="font-semibold text-[var(--color-text)]">
               {order?.totalQuantity || 0}
             </dd>
           </div>
           <div className="flex items-center justify-between px-5 py-4">
             <dt className="text-neutral-500">Payment method</dt>
-            <dd className="font-semibold text-[#1d1d1d]">
+            <dd className="font-semibold text-[var(--color-text)]">
               {payment.method === "cod"
                 ? "Cash on Delivery"
                 : `Card${payment.cardLast4 ? ` ending in ${payment.cardLast4}` : ""}`}
@@ -53,7 +53,7 @@ const OrderConfirmation = ({ order, onDone }) => {
           </div>
           <div className="flex items-center justify-between px-5 py-4">
             <dt className="text-neutral-500">Delivery</dt>
-            <dd className="font-semibold capitalize text-[#1d1d1d]">
+            <dd className="font-semibold capitalize text-[var(--color-text)]">
               {order?.deliveryMethod === "pickup"
                 ? "Store Pickup"
                 : `${order?.deliveryMethod || "standard"} Delivery`}
@@ -61,7 +61,7 @@ const OrderConfirmation = ({ order, onDone }) => {
           </div>
           <div className="flex items-center justify-between px-5 py-4">
             <dt className="text-neutral-500">Total paid</dt>
-            <dd className="font-serif text-xl font-black text-[#e11d48]">
+            <dd className="font-serif text-xl font-black text-[var(--color-primary)]">
               {currency(order?.total || 0)}
             </dd>
           </div>
@@ -76,7 +76,7 @@ const OrderConfirmation = ({ order, onDone }) => {
           <button
             type="button"
             onClick={() => downloadOrderChalan(order)}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#e11d48] px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40] sm:w-auto"
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)] sm:w-auto"
           >
             <DocumentArrowDownIcon className="h-5 w-5" />
             Download Chalan (PDF)
@@ -84,7 +84,7 @@ const OrderConfirmation = ({ order, onDone }) => {
           <button
             type="button"
             onClick={onDone}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#1d1d1d] px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#e11d48] sm:w-auto"
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-text)] px-8 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary)] sm:w-auto"
           >
             Continue Shopping
           </button>

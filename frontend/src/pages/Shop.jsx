@@ -33,7 +33,7 @@ const Rating = ({ value, count }) => (
       <StarIcon
         key={star}
         className={`h-3.5 w-3.5 ${
-          star <= Math.round(value || 0) ? "text-[#e11d48]" : "text-neutral-300"
+          star <= Math.round(value || 0) ? "text-[var(--color-primary)]" : "text-neutral-300"
         }`}
       />
     ))}
@@ -67,12 +67,12 @@ const ProductCard = ({ product, onAdd }) => (
         />
       </Link>
       {product.badge && (
-        <span className="absolute left-3 top-3 rounded-full bg-[#e11d48] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md">
+        <span className="absolute left-3 top-3 rounded-full bg-[var(--color-primary)] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md">
           {product.badge}
         </span>
       )}
       <div className="absolute right-3 top-3 flex gap-2">
-        <WishlistButton product={product} className="h-9 w-9 grid place-items-center rounded-full bg-white/90 backdrop-blur-sm border border-white/50 text-[#1d1d1d] transition-all hover:bg-[#e11d48] hover:text-white" />
+        <WishlistButton product={product} className="h-9 w-9 grid place-items-center rounded-full bg-white/90 backdrop-blur-sm border border-white/50 text-[var(--color-text)] transition-all hover:bg-[var(--color-primary)] hover:text-white" />
       </div>
     </div>
 
@@ -80,8 +80,8 @@ const ProductCard = ({ product, onAdd }) => (
       <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-neutral-400">
         {product.category}
       </p>
-      <h3 className="mt-1.5 font-serif text-base font-bold leading-tight text-[#1d1d1d] transition group-hover:text-[#e11d48]">
-        <Link to={`/product/${product.id}`} className="transition hover:text-[#e11d48]">
+      <h3 className="mt-1.5 font-serif text-base font-bold leading-tight text-[var(--color-text)] transition group-hover:text-[var(--color-primary)]">
+        <Link to={`/product/${product.id}`} className="transition hover:text-[var(--color-primary)]">
           {product.name}
         </Link>
       </h3>
@@ -92,7 +92,7 @@ const ProductCard = ({ product, onAdd }) => (
       </div>
 
       <div className="mt-4 flex items-center justify-between pt-2">
-        <span className="text-lg font-bold text-[#1d1d1d]">
+        <span className="text-lg font-bold text-[var(--color-text)]">
           {currency(product.price)}
         </span>
         <button
@@ -141,7 +141,7 @@ const Pagination = ({ page, totalPages, onChange }) => {
   };
 
   const arrowClass =
-    "flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-neutral-500 transition enabled:hover:border-[#e11d48] enabled:hover:text-[#e11d48] disabled:cursor-not-allowed disabled:opacity-40";
+    "flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-neutral-500 transition enabled:hover:border-[var(--color-primary)] enabled:hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
     <nav className="mt-12 flex items-center justify-center gap-2">
@@ -173,8 +173,8 @@ const Pagination = ({ page, totalPages, onChange }) => {
               aria-current={item === page ? "page" : undefined}
               className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition ${
                 item === page
-                  ? "bg-[#1d1d1d] text-white"
-                  : "border border-black/10 bg-white text-neutral-600 hover:border-[#e11d48] hover:text-[#e11d48]"
+                  ? "bg-[var(--color-text)] text-white"
+                  : "border border-black/10 bg-white text-neutral-600 hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
               }`}
             >
               {item}
@@ -333,13 +333,13 @@ const Shop = ({ setCartOpen }) => {
           <nav className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-neutral-400">
             <span>Home</span>
             <span className="text-neutral-300">/</span>
-            <span className="text-[#e11d48]">Shop</span>
+            <span className="text-[var(--color-primary)]">Shop</span>
           </nav>
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#e11d48]">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-primary)]">
             Elevate your coffee experience
           </p>
-          <h1 className="mt-2 font-serif text-4xl font-black leading-tight text-[#1d1d1d] md:text-6xl">
-            Our <span className="text-[#e11d48]">Shop</span>
+          <h1 className="mt-2 font-serif text-4xl font-black leading-tight text-[var(--color-text)] md:text-6xl">
+            Our <span className="text-[var(--color-primary)]">Shop</span>
           </h1>
           <p className="mt-3 max-w-xl text-sm text-neutral-500 md:text-base">
             From freshly roasted beans to professional-grade equipment —
@@ -360,7 +360,7 @@ const Shop = ({ setCartOpen }) => {
                 }}
                 className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
                   activeCategory === category
-                    ? "border-[#1d1d1d] bg-[#1d1d1d] text-white"
+                    ? "border-[var(--color-text)] bg-[var(--color-text)] text-white"
                     : "border-black/10 bg-white text-neutral-600 hover:border-black/30"
                 }`}
               >
@@ -378,7 +378,7 @@ const Shop = ({ setCartOpen }) => {
                 value={query}
                 onChange={(e) => updateQuery(e.target.value)}
                 placeholder="Search products..."
-                className="w-48 rounded-full border border-black/10 bg-white py-2.5 pl-9 pr-4 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48] md:w-56"
+                className="w-48 rounded-full border border-black/10 bg-white py-2.5 pl-9 pr-4 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)] md:w-56"
               />
             </div>
 
@@ -388,7 +388,7 @@ const Shop = ({ setCartOpen }) => {
                 setSort(e.target.value);
                 setPage(1);
               }}
-              className="rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-[#1d1d1d] outline-none transition focus:border-[#e11d48]"
+              className="rounded-full border border-black/10 bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
             >
               {SORT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -400,12 +400,12 @@ const Shop = ({ setCartOpen }) => {
             <button
               type="button"
               onClick={() => setCartOpen(true)}
-              className="relative flex items-center gap-2 rounded-full bg-[#e11d48] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#c81a40]"
+              className="relative flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)]"
             >
               <ShoppingCartIcon className="h-5 w-5" />
               <span className="hidden sm:inline">Cart</span>
               {totalQuantity > 0 && (
-                <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-[#1d1d1d] text-[10px] font-bold text-white">
+                <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-[var(--color-text)] text-[10px] font-bold text-white">
                   {totalQuantity}
                 </span>
               )}
@@ -416,13 +416,13 @@ const Shop = ({ setCartOpen }) => {
         <div ref={resultsRef} className="mb-6 scroll-mt-6">
           <p className="text-sm text-neutral-500">
             Showing{" "}
-            <span className="font-semibold text-[#1d1d1d]">
+            <span className="font-semibold text-[var(--color-text)]">
               {visibleProducts.length === 0
                 ? 0
                 : `${startIndex + 1}–${startIndex + paginatedProducts.length}`}
             </span>{" "}
             of{" "}
-            <span className="font-semibold text-[#1d1d1d]">
+            <span className="font-semibold text-[var(--color-text)]">
               {visibleProducts.length}
             </span>{" "}
             {visibleProducts.length === 1 ? "product" : "products"}
@@ -439,7 +439,7 @@ const Shop = ({ setCartOpen }) => {
         ) : (
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-black/10 bg-white/50 py-24 text-center">
             <MagnifyingGlassIcon className="h-10 w-10 text-neutral-300" />
-            <p className="font-serif text-xl text-[#1d1d1d]">No products found</p>
+            <p className="font-serif text-xl text-[var(--color-text)]">No products found</p>
             <p className="text-sm text-neutral-500">
               Try a different category or search term.
             </p>
@@ -449,7 +449,7 @@ const Shop = ({ setCartOpen }) => {
                   setActiveCategory("All");
                   updateQuery("");
                 }}
-              className="mt-2 rounded-full bg-[#1d1d1d] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[#e11d48]"
+              className="mt-2 rounded-full bg-[var(--color-text)] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[var(--color-primary)]"
             >
               Reset filters
             </button>

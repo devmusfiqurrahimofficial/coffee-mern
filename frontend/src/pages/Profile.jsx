@@ -75,7 +75,7 @@ const TABS = [
 ];
 
 const inputClass =
-  "w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]";
+  "w-full rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]";
 
 const Profile = () => {
   const { user, loading } = useAuth();
@@ -134,7 +134,7 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-5 text-[#1d1d1d]">
+      <div className="flex min-h-screen items-center justify-center p-5 text-[var(--color-text)]">
         Loading...
       </div>
     );
@@ -258,11 +258,11 @@ const Profile = () => {
       <div className="mx-auto max-w-[1100px]">
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-neutral-400">
-          <Link to="/" className="transition hover:text-[#1d1d1d]">
+          <Link to="/" className="transition hover:text-[var(--color-text)]">
             Home
           </Link>
           <span className="text-neutral-300">/</span>
-          <span className="text-[#e11d48]">My Profile</span>
+          <span className="text-[var(--color-primary)]">My Profile</span>
         </nav>
 
         {/* Profile header */}
@@ -276,7 +276,7 @@ const Profile = () => {
                   className="h-20 w-20 rounded-full object-cover ring-1 ring-black/10"
                 />
               ) : (
-                <span className="grid h-20 w-20 place-items-center rounded-full bg-[#1d1d1d] font-serif text-2xl font-black text-white">
+                <span className="grid h-20 w-20 place-items-center rounded-full bg-[var(--color-text)] font-serif text-2xl font-black text-white">
                   {(user.displayName || user.email || "U").charAt(0).toUpperCase()}
                 </span>
               )}
@@ -285,7 +285,7 @@ const Profile = () => {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-[#e11d48] text-white shadow transition hover:bg-[#c81a40]"
+                    className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-[var(--color-primary)] text-white shadow transition hover:bg-[var(--color-primary-hover)]"
                     aria-label="Change profile picture"
                   >
                     <PencilSquareIcon className="h-4 w-4" />
@@ -301,10 +301,10 @@ const Profile = () => {
               )}
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#e11d48]">
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-[var(--color-primary)]">
                 My Profile
               </p>
-              <h1 className="mt-1 font-serif text-3xl font-black text-[#1d1d1d]">
+              <h1 className="mt-1 font-serif text-3xl font-black text-[var(--color-text)]">
                 {user.displayName || "Coffee Lover"}
               </h1>
               <p className="text-sm text-neutral-500">{user.email}</p>
@@ -319,7 +319,7 @@ const Profile = () => {
               <button
                 type="button"
                 onClick={startEditing}
-                className="flex items-center gap-2 rounded-full bg-[#1d1d1d] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#e11d48]"
+                className="flex items-center gap-2 rounded-full bg-[var(--color-text)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary)]"
               >
                 <PencilSquareIcon className="h-4 w-4" />
                 Edit Profile
@@ -329,7 +329,7 @@ const Profile = () => {
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="rounded-full border border-black/10 bg-white px-6 py-3 text-sm font-semibold text-[#1d1d1d] transition hover:border-[#1d1d1d]"
+                  className="rounded-full border border-black/10 bg-white px-6 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)]"
                 >
                   Cancel
                 </button>
@@ -337,7 +337,7 @@ const Profile = () => {
                   type="button"
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="rounded-full bg-[#e11d48] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#c81a40] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-full bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSaving ? "Saving…" : "Save Changes"}
                 </button>
@@ -351,7 +351,7 @@ const Profile = () => {
             role={message.type === "error" ? "alert" : "status"}
             className={`mt-5 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium ${
               message.type === "error"
-                ? "border border-[#e11d48]/30 bg-[#e11d48]/10 text-[#c81a40]"
+                ? "border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 text-[var(--color-primary-hover)]"
                 : "border border-green-200 bg-green-50 text-green-700"
             }`}
           >
@@ -423,7 +423,7 @@ const Profile = () => {
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-400">
                 {stat.label}
               </p>
-              <p className="mt-2 font-serif text-3xl font-black text-[#1d1d1d]">
+              <p className="mt-2 font-serif text-3xl font-black text-[var(--color-text)]">
                 {stat.value}
               </p>
             </div>
@@ -439,7 +439,7 @@ const Profile = () => {
               onClick={() => setTab(item.id)}
               className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition ${
                 tab === item.id
-                  ? "border-[#1d1d1d] bg-[#1d1d1d] text-white"
+                  ? "border-[var(--color-text)] bg-[var(--color-text)] text-white"
                   : "border-black/10 bg-white text-neutral-600 hover:border-black/30"
               }`}
             >
@@ -454,7 +454,7 @@ const Profile = () => {
           {tab === "overview" && (
             <div className="space-y-5">
               <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm md:p-8">
-                <h2 className="font-serif text-xl font-bold text-[#1d1d1d]">
+                <h2 className="font-serif text-xl font-bold text-[var(--color-text)]">
                   Account details
                 </h2>
                 <dl className="mt-4 divide-y divide-black/5 text-sm">
@@ -467,20 +467,20 @@ const Profile = () => {
                   ].map(([label, value]) => (
                     <div key={label} className="flex items-center justify-between gap-4 py-3">
                       <dt className="text-neutral-500">{label}</dt>
-                      <dd className="text-right font-semibold text-[#1d1d1d]">{value}</dd>
+                      <dd className="text-right font-semibold text-[var(--color-text)]">{value}</dd>
                     </div>
                   ))}
                 </dl>
               </section>
 
               <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm md:p-8">
-                <h2 className="font-serif text-xl font-bold text-[#1d1d1d]">
+                <h2 className="font-serif text-xl font-bold text-[var(--color-text)]">
                   Recent orders
                 </h2>
                 {orders.length === 0 ? (
                   <p className="mt-4 text-sm text-neutral-500">
                     You have not placed any orders yet.{" "}
-                    <Link to="/shop" className="font-semibold text-[#e11d48]">
+                    <Link to="/shop" className="font-semibold text-[var(--color-primary)]">
                       Start shopping
                     </Link>
                   </p>
@@ -489,7 +489,7 @@ const Profile = () => {
                     {orders.slice(0, 3).map((order) => (
                       <li key={order._id} className="flex flex-wrap items-center justify-between gap-2 py-3">
                         <div>
-                          <p className="text-sm font-semibold text-[#1d1d1d]">
+                          <p className="text-sm font-semibold text-[var(--color-text)]">
                             #{order.orderNumber}
                           </p>
                           <p className="text-xs text-neutral-500">
@@ -497,7 +497,7 @@ const Profile = () => {
                           </p>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-sm font-bold text-[#1d1d1d]">
+                          <span className="text-sm font-bold text-[var(--color-text)]">
                             {currency(order.total)}
                           </span>
                           <StatusBadge status={order.status} />
@@ -513,7 +513,7 @@ const Profile = () => {
           {tab === "orders" && (
             <section className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm">
               <div className="border-b border-black/10 px-6 py-4">
-                <h2 className="font-serif text-xl font-bold text-[#1d1d1d]">My Orders</h2>
+                <h2 className="font-serif text-xl font-bold text-[var(--color-text)]">My Orders</h2>
                 <p className="text-xs text-neutral-500">
                   Every order placed with {user.email}.
                 </p>
@@ -526,10 +526,10 @@ const Profile = () => {
               ) : orders.length === 0 ? (
                 <div className="px-6 py-16 text-center">
                   <ShoppingBagIcon className="mx-auto h-10 w-10 text-neutral-300" />
-                  <p className="mt-4 font-serif text-lg text-[#1d1d1d]">No orders yet</p>
+                  <p className="mt-4 font-serif text-lg text-[var(--color-text)]">No orders yet</p>
                   <Link
                     to="/shop"
-                    className="mt-4 inline-block rounded-full bg-[#e11d48] px-6 py-3 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40]"
+                    className="mt-4 inline-block rounded-full bg-[var(--color-primary)] px-6 py-3 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)]"
                   >
                     Browse Products
                   </Link>
@@ -540,7 +540,7 @@ const Profile = () => {
                     <li key={order._id} className="px-6 py-5">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <p className="font-serif text-lg font-bold text-[#1d1d1d]">
+                          <p className="font-serif text-lg font-bold text-[var(--color-text)]">
                             #{order.orderNumber}
                           </p>
                           <p className="mt-0.5 text-xs text-neutral-500">
@@ -550,7 +550,7 @@ const Profile = () => {
                           </p>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-sm font-bold text-[#1d1d1d]">
+                          <span className="text-sm font-bold text-[var(--color-text)]">
                             {currency(order.total)}
                           </span>
                           <StatusBadge status={order.status} />
@@ -580,12 +580,12 @@ const Profile = () => {
           {tab === "wishlist" && (
             <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm md:p-8">
               <div className="flex items-center justify-between">
-                <h2 className="font-serif text-xl font-bold text-[#1d1d1d]">Wishlist</h2>
+                <h2 className="font-serif text-xl font-bold text-[var(--color-text)]">Wishlist</h2>
                 {wishlistItems.length > 0 && (
                   <button
                     type="button"
                     onClick={() => dispatch(clearWishlist())}
-                    className="flex items-center gap-1.5 rounded-full border border-[#e11d48]/30 px-4 py-2 text-xs font-semibold text-[#e11d48] transition hover:bg-[#e11d48] hover:text-white"
+                    className="flex items-center gap-1.5 rounded-full border border-[var(--color-primary)]/30 px-4 py-2 text-xs font-semibold text-[var(--color-primary)] transition hover:bg-[var(--color-primary)] hover:text-white"
                   >
                     <TrashIcon className="h-3.5 w-3.5" />
                     Clear all
@@ -596,7 +596,7 @@ const Profile = () => {
               {wishlistItems.length === 0 ? (
                 <div className="py-16 text-center">
                   <HeartIcon className="mx-auto h-10 w-10 text-neutral-300" />
-                  <p className="mt-4 font-serif text-lg text-[#1d1d1d]">
+                  <p className="mt-4 font-serif text-lg text-[var(--color-text)]">
                     Your wishlist is empty
                   </p>
                   <p className="mt-1 text-sm text-neutral-500">
@@ -604,7 +604,7 @@ const Profile = () => {
                   </p>
                   <Link
                     to="/shop"
-                    className="mt-4 inline-block rounded-full bg-[#e11d48] px-6 py-3 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40]"
+                    className="mt-4 inline-block rounded-full bg-[var(--color-primary)] px-6 py-3 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)]"
                   >
                     Browse Products
                   </Link>
@@ -626,11 +626,11 @@ const Profile = () => {
                       <div className="flex flex-1 flex-col">
                         <Link
                           to={`/product/${item.id}`}
-                          className="text-sm font-semibold text-[#1d1d1d] transition hover:text-[#e11d48]"
+                          className="text-sm font-semibold text-[var(--color-text)] transition hover:text-[var(--color-primary)]"
                         >
                           {item.name}
                         </Link>
-                        <span className="mt-0.5 text-sm font-bold text-[#1d1d1d]">
+                        <span className="mt-0.5 text-sm font-bold text-[var(--color-text)]">
                           {currency(item.price)}
                         </span>
                         <div className="mt-auto flex items-center gap-2 pt-2">
@@ -646,7 +646,7 @@ const Profile = () => {
                                 })
                               )
                             }
-                            className="flex items-center gap-1.5 rounded-full bg-[#1d1d1d] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-[#e11d48]"
+                            className="flex items-center gap-1.5 rounded-full bg-[var(--color-text)] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-[var(--color-primary)]"
                           >
                             <ShoppingCartIcon className="h-3.5 w-3.5" />
                             Add to cart
@@ -667,13 +667,13 @@ const Profile = () => {
           {tab === "settings" && (
             <div className="space-y-5">
               <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm md:p-8">
-                <h2 className="font-serif text-xl font-bold text-[#1d1d1d]">
+                <h2 className="font-serif text-xl font-bold text-[var(--color-text)]">
                   Preferences
                 </h2>
 
                 <label className="mt-4 flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-black/5 p-4">
                   <span>
-                    <span className="block text-sm font-semibold text-[#1d1d1d]">
+                    <span className="block text-sm font-semibold text-[var(--color-text)]">
                       Newsletter
                     </span>
                     <span className="text-xs text-neutral-500">
@@ -687,14 +687,14 @@ const Profile = () => {
                       onChange={toggleNewsletter}
                       className="peer sr-only"
                     />
-                    <span className="block h-6 w-11 rounded-full bg-neutral-300 transition peer-checked:bg-[#e11d48]" />
+                    <span className="block h-6 w-11 rounded-full bg-neutral-300 transition peer-checked:bg-[var(--color-primary)]" />
                     <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5" />
                   </span>
                 </label>
               </section>
 
               <section className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm md:p-8">
-                <h2 className="font-serif text-xl font-bold text-[#1d1d1d]">Account</h2>
+                <h2 className="font-serif text-xl font-bold text-[var(--color-text)]">Account</h2>
                 <div className="mt-4 flex flex-wrap gap-3">
                   <button
                     type="button"
@@ -702,7 +702,7 @@ const Profile = () => {
                       signOut(auth);
                       dispatch(clearWishlist());
                     }}
-                    className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-[#1d1d1d] transition hover:border-[#1d1d1d]"
+                    className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)]"
                   >
                     <ArrowLeftOnRectangleIcon className="h-4 w-4" />
                     Logout
@@ -711,7 +711,7 @@ const Profile = () => {
                     type="button"
                     onClick={() => dispatch(clearCart())}
                     disabled={cartItems.length === 0}
-                    className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-[#1d1d1d] transition hover:border-[#1d1d1d] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-text)] disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <XCircleIcon className="h-4 w-4" />
                     Clear cart

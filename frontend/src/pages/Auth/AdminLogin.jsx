@@ -42,7 +42,7 @@ const getErrorText = (error) => {
 };
 
 const inputClass =
-  "w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-[#1d1d1d] outline-none transition placeholder:text-neutral-400 focus:border-[#e11d48]";
+  "w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-[var(--color-text)] outline-none transition placeholder:text-neutral-400 focus:border-[var(--color-primary)]";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -97,11 +97,11 @@ const AdminLogin = () => {
           <Link to="/" className="mb-6">
             <img src={logo} alt="Coffee Mern" className="h-14 w-auto" />
           </Link>
-          <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-[#1d1d1d] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white">
+          <span className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-text)] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white">
             <ShieldCheckIcon className="h-3.5 w-3.5" />
             Admin Portal
           </span>
-          <h1 className="font-serif text-3xl font-black text-[#1d1d1d]">
+          <h1 className="font-serif text-3xl font-black text-[var(--color-text)]">
             Dashboard Login
           </h1>
           <p className="mt-2 text-sm text-neutral-500">
@@ -154,7 +154,7 @@ const AdminLogin = () => {
                   type="button"
                   onClick={() => setShowPassword((visible) => !visible)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 transition hover:text-[#e11d48]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 transition hover:text-[var(--color-primary)]"
                 >
                   {showPassword ? (
                     <EyeSlashIcon className="h-5 w-5" />
@@ -171,7 +171,7 @@ const AdminLogin = () => {
                 className={`flex items-start gap-2 rounded-xl px-4 py-3 text-sm font-medium ${
                   message.type === "success"
                     ? "border border-green-200 bg-green-50 text-green-700"
-                    : "border border-[#e11d48]/30 bg-[#e11d48]/10 text-[#c81a40]"
+                    : "border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 text-[var(--color-primary-hover)]"
                 }`}
               >
                 <ExclamationCircleIcon className="mt-0.5 h-4 w-4 flex-shrink-0" />
@@ -182,7 +182,7 @@ const AdminLogin = () => {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-[#e11d48] py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[#c81a40] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? (
                 "Signing in..."
@@ -204,7 +204,7 @@ const AdminLogin = () => {
         <div className="mt-6 text-center">
           <Link
             to="/"
-            className="text-sm font-medium text-neutral-500 transition hover:text-[#1d1d1d]"
+            className="text-sm font-medium text-neutral-500 transition hover:text-[var(--color-text)]"
           >
             &larr; Back to store
           </Link>

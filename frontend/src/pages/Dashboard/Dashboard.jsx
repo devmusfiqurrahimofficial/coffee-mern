@@ -47,7 +47,7 @@ const StatCard = ({ label, value, hint, to, accent }) => {
       </p>
       <p
         className={`mt-2 font-serif text-3xl font-black ${
-          accent ? "text-[#e11d48]" : "text-[#1d1d1d]"
+          accent ? "text-[var(--color-primary)]" : "text-[var(--color-text)]"
         }`}
       >
         {value}
@@ -104,7 +104,7 @@ const RevenueChart = ({ orders }) => {
 
   return (
     <section className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
-      <h2 className="font-serif text-lg font-bold text-[#1d1d1d]">
+      <h2 className="font-serif text-lg font-bold text-[var(--color-text)]">
         Revenue — last 7 days
       </h2>
       <p className="text-xs text-neutral-500">Completed value of non-rejected orders.</p>
@@ -115,7 +115,7 @@ const RevenueChart = ({ orders }) => {
               {totals[index] > 0 ? formatMoney(totals[index]) : ""}
             </span>
             <div
-              className="w-full rounded-t-lg bg-[#e11d48]/85 transition hover:bg-[#e11d48]"
+              className="w-full rounded-t-lg bg-[var(--color-primary)]/85 transition hover:bg-[var(--color-primary)]"
               style={{ height: `${Math.max((totals[index] / max) * 100, 2)}%` }}
               title={`${day.toLocaleDateString()} — ${formatMoney(totals[index])}`}
             />
@@ -150,14 +150,14 @@ const StatusDonut = ({ orders }) => {
 
   return (
     <section className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
-      <h2 className="font-serif text-lg font-bold text-[#1d1d1d]">Order statuses</h2>
+      <h2 className="font-serif text-lg font-bold text-[var(--color-text)]">Order statuses</h2>
       <div className="mt-5 flex items-center gap-6">
         <div
           className="grid h-28 w-28 flex-shrink-0 place-items-center rounded-full"
           style={{ backgroundImage: gradient }}
         >
           <div className="grid h-18 w-18 place-items-center rounded-full bg-white">
-            <span className="font-serif text-xl font-black text-[#1d1d1d]">{total}</span>
+            <span className="font-serif text-xl font-black text-[var(--color-text)]">{total}</span>
           </div>
         </div>
         <ul className="space-y-1.5 text-xs">
@@ -168,7 +168,7 @@ const StatusDonut = ({ orders }) => {
                 style={{ backgroundColor: STATUS_COLORS[status] }}
               />
               {STATUS_STYLES[status][0]}
-              <span className="ml-auto font-bold text-[#1d1d1d]">{counts[index]}</span>
+              <span className="ml-auto font-bold text-[var(--color-text)]">{counts[index]}</span>
             </li>
           ))}
         </ul>
@@ -200,7 +200,7 @@ const TopProducts = ({ orders, products }) => {
   return (
     <section className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
-        <h2 className="font-serif text-lg font-bold text-[#1d1d1d]">Top products</h2>
+        <h2 className="font-serif text-lg font-bold text-[var(--color-text)]">Top products</h2>
         <span className="text-xs text-neutral-400">{products.length} total</span>
       </div>
       {top.length === 0 ? (
@@ -212,10 +212,10 @@ const TopProducts = ({ orders, products }) => {
           {top.map((item) => (
             <li key={item.name} className="flex items-center justify-between gap-3 py-2.5">
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-[#1d1d1d]">{item.name}</p>
+                <p className="truncate text-sm font-semibold text-[var(--color-text)]">{item.name}</p>
                 <p className="text-xs text-neutral-500">{item.quantity} sold</p>
               </div>
-              <span className="flex-shrink-0 text-sm font-bold text-[#e11d48]">
+              <span className="flex-shrink-0 text-sm font-bold text-[var(--color-primary)]">
                 {formatMoney(item.revenue)}
               </span>
             </li>
@@ -297,12 +297,12 @@ export const Dashboard = () => {
 
         <section className="overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-black/10 px-5 py-4">
-            <h2 className="font-serif text-lg font-bold text-[#1d1d1d]">
+            <h2 className="font-serif text-lg font-bold text-[var(--color-text)]">
               Latest Orders
             </h2>
             <Link
               to="/dashboard/orders"
-              className="text-xs font-semibold uppercase tracking-wider text-[#e11d48] transition hover:text-[#1d1d1d]"
+              className="text-xs font-semibold uppercase tracking-wider text-[var(--color-primary)] transition hover:text-[var(--color-text)]"
             >
               View all
             </Link>
@@ -319,7 +319,7 @@ export const Dashboard = () => {
                   className="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5"
                 >
                   <div>
-                    <p className="text-sm font-semibold text-[#1d1d1d]">
+                    <p className="text-sm font-semibold text-[var(--color-text)]">
                       #{order.orderNumber}
                     </p>
                     <p className="text-xs text-neutral-500">
@@ -328,7 +328,7 @@ export const Dashboard = () => {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-[#1d1d1d]">
+                    <span className="text-sm font-bold text-[var(--color-text)]">
                       {formatMoney(order.total)}
                     </span>
                     <OrderStatusBadge status={order.status} />

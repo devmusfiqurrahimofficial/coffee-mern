@@ -115,8 +115,8 @@ const Nav = ({ setCartOpen }) => {
                     className={({ isActive }) =>
                       `px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                         isActive
-                          ? "bg-[#e11d48] text-white shadow-md shadow-[#e11d48]/30"
-                          : "text-[#1d1d1d]/80 hover:text-[#e11d48] hover:bg-black/5 hover:shadow-sm"
+                          ? "bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/30"
+                          : "text-[var(--color-text)]/80 hover:text-[var(--color-primary)] hover:bg-black/5 hover:shadow-sm"
                       }`
                     }
                   >
@@ -130,20 +130,20 @@ const Nav = ({ setCartOpen }) => {
             <div className="hidden md:flex items-center flex-1 max-w-md mx-auto">
               <form onSubmit={submitSearch} className="relative group w-full">
                 <MagnifyingGlassIcon
-                  className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 group-focus-within:text-[#e11d48] transition-colors"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 group-focus-within:text-[var(--color-primary)] transition-colors"
                 />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search products…"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-full border border-black/10 bg-white text-sm text-[#1d1d1d] outline-none focus:ring-2 focus:ring-[#e11d48]/30 focus:border-[#e11d48] transition-all duration-200"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-full border border-black/10 bg-white text-sm text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)] transition-all duration-200"
                 />
                 {searchTerm.trim() && (
                   <button
                     type="button"
                     onClick={() => setSearchTerm("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-[#e11d48] transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-[var(--color-primary)] transition-colors"
                   >
                     <XMarkIcon className="h-4 w-4" />
                   </button>
@@ -157,7 +157,7 @@ const Nav = ({ setCartOpen }) => {
                 <button
                   type="button"
                   onClick={() => navigate("/profile")}
-                  className="p-2 rounded-full border border-black/10 bg-white text-[#e11d48] transition-all hover:bg-[#e11d48]/10 hover:text-[#c81a40] hover:shadow-sm"
+                  className="p-2 rounded-full border border-black/10 bg-white text-[var(--color-primary)] transition-all hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary-hover)] hover:shadow-sm"
                   aria-label="Profile"
                 >
                   {user.photoURL ? (
@@ -167,7 +167,7 @@ const Nav = ({ setCartOpen }) => {
                       className="h-5 w-5 rounded-full object-cover"
                     />
                   ) : (
-                    <span className="flex items-center justify-center h-5 w-5 text-xs font-semibold text-[#e11d48]">
+                    <span className="flex items-center justify-center h-5 w-5 text-xs font-semibold text-[var(--color-primary)]">
                       {(user.displayName || user.email?.split("@")[0] || "U")
                         .charAt(0)
                         .toUpperCase()}
@@ -177,7 +177,7 @@ const Nav = ({ setCartOpen }) => {
               ) : (
                 <Link
                   to="/auth/login"
-                  className="flex items-center gap-2 px-3 py-2 rounded-full border border-black/10 bg-white text-xs font-semibold text-[#1d1d1d] transition-all hover:bg-black/5 hover:text-[#e11d48] hover:shadow-sm"
+                  className="flex items-center gap-2 px-3 py-2 rounded-full border border-black/10 bg-white text-xs font-semibold text-[var(--color-text)] transition-all hover:bg-black/5 hover:text-[var(--color-primary)] hover:shadow-sm"
                 >
                   <span className="hidden sm:inline">Login</span>
                   <ArrowRightIcon className="h-4 w-4" />
@@ -186,13 +186,13 @@ const Nav = ({ setCartOpen }) => {
 
               <button
                 type="button"
-                className="relative p-2 rounded-full bg-[#e11d48] text-white shadow-lg shadow-[#e11d48]/30 transition-all hover:scale-105 hover:shadow-[#e11d48]/40 active:scale-95"
+                className="relative p-2 rounded-full bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/30 transition-all hover:scale-105 hover:shadow-[var(--color-primary)]/40 active:scale-95"
                 onClick={() => setCartOpen(true)}
                 aria-label={`Cart, ${totalQuantity} items`}
               >
                 <ShoppingCartIcon className="h-5 w-5" />
                 {totalQuantity > 0 && (
-                  <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-white text-[#e11d48] text-[10px] font-bold border border-[#e11d48]">
+                  <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-white text-[var(--color-primary)] text-[10px] font-bold border border-[var(--color-primary)]">
                     {totalQuantity}
                   </span>
                 )}
@@ -200,7 +200,7 @@ const Nav = ({ setCartOpen }) => {
 
               <button
                 type="button"
-                className="md:hidden p-2 rounded-full border border-black/10 bg-white text-[#1d1d1d] transition-all hover:bg-black/5 hover:shadow-sm"
+                className="md:hidden p-2 rounded-full border border-black/10 bg-white text-[var(--color-text)] transition-all hover:bg-black/5 hover:shadow-sm"
                 onClick={() => setMenuOpen(true)}
                 aria-label="Open menu"
               >
@@ -218,7 +218,7 @@ const Nav = ({ setCartOpen }) => {
             <button
               type="button"
               onClick={() => setSearchOpen(false)}
-              className="p-2 rounded-full hover:bg-black/5 text-[#1d1d1d]"
+              className="p-2 rounded-full hover:bg-black/5 text-[var(--color-text)]"
               aria-label="Close search"
             >
               <XMarkIcon className="h-5 w-5" />
@@ -231,7 +231,7 @@ const Nav = ({ setCartOpen }) => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search products…"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-black/10 bg-[#faf9f6] text-lg text-[#1d1d1d] outline-none focus:ring-2 focus:ring-[#e11d48]/30 focus:border-[#e11d48]"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-black/10 bg-[#faf9f6] text-lg text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]"
               />
             </form>
           </div>
@@ -256,10 +256,10 @@ const Nav = ({ setCartOpen }) => {
                           className="h-10 w-10 flex-shrink-0 rounded-lg border border-black/5 object-cover"
                         />
                         <div className="flex-1 min-w-0">
-                          <span className="block text-sm font-medium text-[#1d1d1d] truncate">
+                          <span className="block text-sm font-medium text-[var(--color-text)] truncate">
                             {product.name}
                           </span>
-                          <span className="text-xs font-bold text-[#e11d48]">
+                          <span className="text-xs font-bold text-[var(--color-primary)]">
                             {currency(product.price)}
                           </span>
                         </div>
@@ -297,8 +297,8 @@ const Nav = ({ setCartOpen }) => {
           <div className="p-6 border-b border-black/5 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
               <img src={logo} alt="Logo" className="h-7 w-7" />
-              <span className="font-serif text-lg font-black tracking-tight text-[#1d1d1d] hidden sm:inline">
-                Coffee<span className="text-[#e11d48]">Mern</span>
+              <span className="font-serif text-lg font-black tracking-tight text-[var(--color-text)] hidden sm:inline">
+                Coffee<span className="text-[var(--color-primary)]">Mern</span>
               </span>
             </Link>
             <button
@@ -319,7 +319,7 @@ const Nav = ({ setCartOpen }) => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search products…"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-black/10 bg-[#faf9f6] text-lg text-[#1d1d1d] outline-none focus:ring-2 focus:ring-[#e11d48]/30 focus:border-[#e11d48]"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-black/10 bg-[#faf9f6] text-lg text-[var(--color-text)] outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:border-[var(--color-primary)]"
               />
             </form>
 
@@ -342,10 +342,10 @@ const Nav = ({ setCartOpen }) => {
                           alt={product.name}
                           className="h-10 w-10 flex-shrink-0 rounded-lg border border-black/5 object-cover"
                         />
-                        <span className="flex-1 text-sm font-medium text-[#1d1d1d] truncate">
+                        <span className="flex-1 text-sm font-medium text-[var(--color-text)] truncate">
                           {product.name}
                         </span>
-                        <span className="text-xs font-bold text-[#e11d48]">
+                        <span className="text-xs font-bold text-[var(--color-primary)]">
                           {currency(product.price)}
                         </span>
                       </Link>
@@ -367,8 +367,8 @@ const Nav = ({ setCartOpen }) => {
                   className={({ isActive }) =>
                     `px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                       isActive
-                        ? "bg-[#e11d48] text-white shadow-md"
-                        : "text-[#1d1d1d]/80 hover:bg-black/5 hover:text-[#e11d48]"
+                        ? "bg-[var(--color-primary)] text-white shadow-md"
+                        : "text-[var(--color-text)]/80 hover:bg-black/5 hover:text-[var(--color-primary)]"
                     }`
                   }
                 >
@@ -379,7 +379,7 @@ const Nav = ({ setCartOpen }) => {
                 <button
                   type="button"
                   onClick={logout}
-                  className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-[#e11d48] border border-[#e11d48]/20 bg-[#e11d48]/5 transition-all hover:bg-[#e11d48] hover:text-white hover:shadow-sm"
+                  className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-[var(--color-primary)] border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/5 transition-all hover:bg-[var(--color-primary)] hover:text-white hover:shadow-sm"
                 >
                   <XMarkIcon className="h-4 w-4" />
                   Logout

@@ -45,8 +45,8 @@ const WishlistButton = ({ product, className = "" }) => {
         aria-pressed={isWishlisted}
         className={`grid h-9 w-9 place-items-center rounded-full shadow-sm backdrop-blur transition ${
           isWishlisted
-            ? "bg-[#e11d48] text-white"
-            : "bg-white/90 text-neutral-500 hover:text-[#e11d48]"
+            ? "bg-[var(--color-primary)] text-white"
+            : "bg-white/90 text-neutral-500 hover:text-[var(--color-primary)]"
         } ${className}`}
       >
         <HeartIcon className="h-5 w-5" />
