@@ -13,13 +13,19 @@ import logo from "../../assets/image/logo.png";
 
 import { isAdminEmail } from "../../utils/admin";
 import { useGenerateJWTMutation } from "../../redux/api/userApi/userApi";
+import { API_BASE_URL } from "../../utils/apiConfig";
 
 const getErrorText = (error) => {
   if (error?.status === "FETCH_ERROR") {
-    return "Cannot reach the server. Is it running on port 5000?";
+    return `Cannot reach the server at ${API_BASE_URL}.`;
   }
   if (error?.status) {
-    return `Server error ${error.status}: ${error.data?.error || "unknown error"}`;
+    // express-validator failures arrive as { errors: [{ msg, path }] };
+    // hand-written handlers use { error: "message" }.
+    const validationText = Array.isArray(error.data?.errors)
+      ? error.data.errors.map((item) => item.msg).join(" ")
+      : "";
+    return `Server error ${error.status}: ${error.data?.error || validationText || "unknown error"}`;
   }
   switch (error?.code) {
     case "auth/invalid-email":
