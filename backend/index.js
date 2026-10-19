@@ -42,7 +42,7 @@ try {
 
 
 const app = express();
-app.set("trust proxy", 1); // Render / Netlify sit behind a proxy — needed for rate limiting + IPs
+app.set("trust proxy", 1); // Render / Vercel sit behind a proxy — needed for rate limiting + IPs
 const port = process.env.PORT || 5000;
 
 // Admin emails — MUST come from ADMIN_EMAILS env (comma-separated).
@@ -69,7 +69,7 @@ app.use(
         connectSrc: [
           "'self'",
           "https://coffee-mern.onrender.com",
-          "https://coffee-mern.netlify.app",
+          "https://coffee-mern-iota.vercel.app",
           "wss://coffee-mern.onrender.com",
           "https://*.firebaseio.com",
           "https://*.googleapis.com",
@@ -87,15 +87,13 @@ app.use(
 
 // 2. CORS: strict allow-list only. FRONTEND_ORIGIN env controls the primary
 // origin; localhost entries are dev-only and disabled in production.
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "https://coffee-mern.netlify.app";
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "https://coffee-mern-iota.vercel.app";
 const isProduction = process.env.NODE_ENV === "production";
 const ALLOWED_ORIGINS = [
   FRONTEND_ORIGIN,
-  "https://coffee-mern.netlify.app",
   ...(isProduction
     ? []
     : [
-        "https://resplendent-begonia-d8c942.netlify.app",
         "https://coffee-mern.onrender.com",
         "http://localhost:5173",
         "http://localhost:5174",
@@ -1782,7 +1780,7 @@ async function run() {
         }
 
         // Covers are stored in MongoDB so the API also runs on hosts with a
-        // read-only filesystem (Netlify Functions, for example).
+        // read-only filesystem.
         const coverId = randomUUID();
         const image = `blog-covers/${coverId}`;
 
@@ -2217,8 +2215,7 @@ async function run() {
   return app;
 }
 
-// The app is initialised once and cached, so it works both as a normal
-// server (npm start) and as a Netlify Function (see netlify/functions/api.js).
+// The app is initialised once and cached for the normal server (npm start).
 let initializedApp;
 
 const getApp = async () => {

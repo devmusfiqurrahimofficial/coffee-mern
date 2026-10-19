@@ -1,4 +1,4 @@
-// Backend base URL. Set VITE_API_URL in the environment (e.g. in Netlify).
+// Backend base URL. Set VITE_API_URL in the environment (e.g. in Vercel).
 // No localhost fallback in production builds — misconfiguration must fail
 // loudly instead of silently pointing at a dev server.
 const configuredUrl = import.meta.env.VITE_API_URL?.replace(/\/+$/, "");

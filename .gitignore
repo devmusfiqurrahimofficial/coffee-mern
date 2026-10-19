@@ -15,6 +15,5 @@ serviceAccount*.json
 
 # Tooling / build artifacts
 .kilo/
-.netlify/
 dist/
 
