@@ -91,6 +91,7 @@ const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "https://coffee-mern-iota
 const isProduction = process.env.NODE_ENV === "production";
 const ALLOWED_ORIGINS = [
   FRONTEND_ORIGIN,
+  "https://coffee-mern-iota.vercel.app",
   ...(isProduction
     ? []
     : [
