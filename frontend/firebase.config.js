@@ -6,8 +6,9 @@ import { getStorage } from "firebase/storage";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
-// Firebase config comes from environment variables (Vite exposes only
-// VITE_* keys). No secrets live in source — see frontend/.env.example.
+// Firebase config comes from environment variables. FIREBASE_API_KEY is
+// explicitly exposed by vite.config.js; the other values use VITE_* keys.
+// No secrets live in source — see frontend/.env.example.
 // Firebase API keys are public identifiers; access is enforced by Firebase
 // Security Rules + backend JWT checks, never by hiding the key.
 const firebaseConfig = {
