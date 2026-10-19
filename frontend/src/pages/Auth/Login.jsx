@@ -1,7 +1,6 @@
 import {
   signInWithPopup,
   GoogleAuthProvider,
-  getAuth,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { useState } from "react";
@@ -9,6 +8,10 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { useGenerateJWTMutation } from "../../redux/api/userApi/userApi";
 import { API_BASE_URL } from "../../utils/apiConfig";
+import { auth } from "../../../firebase.config";
+
+const FIREBASE_CONFIGURATION_ERROR =
+  "Login is unavailable because Firebase is not configured. Set the VITE_FIREBASE_* environment variables in Vercel and redeploy.";
 
 // Turns any error (Firebase or RTK Query) into readable text
 const getErrorText = (error) => {
@@ -63,7 +66,9 @@ const Login = () => {
     setLoading(true);
     setMessage({ type: "", text: "" });
     try {
-      const auth = getAuth();
+      if (!auth) {
+        throw new Error(FIREBASE_CONFIGURATION_ERROR);
+      }
       const result = await signInWithPopup(auth, provider);
 
       if (!result.user?.email) {
@@ -89,7 +94,9 @@ const Login = () => {
     setLoading(true);
     setMessage({ type: "", text: "" });
     try {
-      const auth = getAuth();
+      if (!auth) {
+        throw new Error(FIREBASE_CONFIGURATION_ERROR);
+      }
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
       await fetchAndStoreToken(userCredential.user);
