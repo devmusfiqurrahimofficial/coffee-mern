@@ -8,6 +8,11 @@ export const  useAuth = () => {
     const [previousUser, setPreviousUser] = useState(null);
 
     useEffect(() => {
+      if (!auth) {
+        setLoading(false);
+        return;
+      }
+
      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
         if (previousUser && !currentUser) {
           try {

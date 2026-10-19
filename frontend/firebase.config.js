@@ -19,18 +19,20 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+const isFirebaseConfigured = Object.values(firebaseConfig).every(Boolean);
+const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
+export const auth = app ? getAuth(app) : null;
+export const db = app ? getFirestore(app) : null;
+export const storage = app ? getStorage(app) : null;
 
 // Enable IndexedDB persistence so Firestore can serve cached reads when
 // the client is temporarily offline instead of failing outright.
-try {
-  enableIndexedDbPersistence(db);
-} catch (error) {
-  if (error.code !== "failed-precondition" && error.code !== "unimplemented") {
-    console.error("Firebase persistence could not be enabled:", error);
+if (db) {
+  try {
+    enableIndexedDbPersistence(db);
+  } catch (error) {
+    if (error.code !== "failed-precondition" && error.code !== "unimplemented") {
+      console.error("Firebase persistence could not be enabled:", error);
+    }
   }
 }
