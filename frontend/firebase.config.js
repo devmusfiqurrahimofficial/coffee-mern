@@ -11,7 +11,7 @@ import { getStorage } from "firebase/storage";
 // Firebase API keys are public identifiers; access is enforced by Firebase
 // Security Rules + backend JWT checks, never by hiding the key.
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  apiKey: import.meta.env.FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
