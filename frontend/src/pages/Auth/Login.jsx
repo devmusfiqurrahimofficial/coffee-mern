@@ -11,7 +11,7 @@ import { API_BASE_URL } from "../../utils/apiConfig";
 import { auth } from "../../../firebase.config";
 
 const FIREBASE_CONFIGURATION_ERROR =
-  "Login is unavailable because Firebase is not configured. Set FIREBASE_API_KEY and the VITE_FIREBASE_* environment variables in Vercel, then redeploy.";
+  "Login is unavailable because Firebase is not configured. Set the VITE_FIREBASE_* environment variables (API key, auth domain, project ID, storage bucket, messaging sender ID, app ID) in Vercel, then redeploy.";
 
 // Turns any error (Firebase or RTK Query) into readable text
 const getErrorText = (error) => {

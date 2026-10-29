@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), tailwindcss()],
     define: {
       'import.meta.env.API_KEY': JSON.stringify(API_KEY),
-      'import.meta.env.FIREBASE_API_KEY': JSON.stringify(FIREBASE_API_KEY),
+      'import.meta.env.FIREBASE_API_KEY': JSON.stringify(FIREBASE_API_KEY ?? ''),
     },
   }
 })

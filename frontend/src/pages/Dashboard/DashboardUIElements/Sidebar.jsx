@@ -3,7 +3,6 @@ import { signOut } from "firebase/auth";
 import {
   ArrowLeftOnRectangleIcon,
   ChatBubbleLeftEllipsisIcon,
-  ChatBubbleLeftIcon,
   ClipboardDocumentListIcon,
   Cog6ToothIcon,
   CubeIcon,
@@ -58,7 +57,6 @@ const NAV_SECTIONS = [
     items: [
       { to: "/dashboard/customers", label: "Customers", Icon: UsersIcon },
       { to: "/dashboard/messages", label: "Messages", Icon: EnvelopeIcon, badgeKey: "messages" },
-      { to: "/dashboard/chats", label: "Chats", Icon: ChatBubbleLeftIcon },
       { to: "/dashboard/reviews", label: "Reviews", Icon: ChatBubbleLeftEllipsisIcon },
       { to: "/dashboard/content", label: "Page Content", Icon: PaintBrushIcon },
       { to: "/dashboard/settings", label: "Settings", Icon: Cog6ToothIcon },

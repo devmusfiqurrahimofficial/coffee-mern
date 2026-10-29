@@ -10,15 +10,12 @@ import { ordersApi } from "./api/ordersApi/ordersApi";
 import { settingsApi } from "./api/settingsApi/settingsApi";
 import { contentApi } from "./api/contentApi/contentApi";
 import { messagesApi } from "./api/messagesApi/messagesApi";
-import chatReducer from "./features/chatSlice/chatSlice";
-import { chatApi } from "./api/chatApi/chatApi";
 
 const store = configureStore({
   reducer: {
     // Add your reducers here
     cart: cartReducer,
     wishlist: wishlistReducer,
-    chat: chatReducer,
     [productApi.reducerPath]: productApi.reducer,
     [reviewsApi.reducerPath]: reviewsApi.reducer,
     [blogsApi.reducerPath]: blogsApi.reducer,
@@ -27,7 +24,6 @@ const store = configureStore({
     [settingsApi.reducerPath]: settingsApi.reducer,
     [contentApi.reducerPath]: contentApi.reducer,
     [messagesApi.reducerPath]: messagesApi.reducer,
-    [chatApi.reducerPath]: chatApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -38,8 +34,7 @@ const store = configureStore({
       ordersApi.middleware,
       settingsApi.middleware,
       contentApi.middleware,
-      messagesApi.middleware,
-      chatApi.middleware
+      messagesApi.middleware
     ),
 });
 

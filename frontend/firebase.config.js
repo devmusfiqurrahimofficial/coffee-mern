@@ -6,13 +6,15 @@ import { getStorage } from "firebase/storage";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
-// Firebase config comes from environment variables. FIREBASE_API_KEY is
-// explicitly exposed by vite.config.js; the other values use VITE_* keys.
+// Firebase config comes from environment variables. The API key may be set
+// as VITE_FIREBASE_API_KEY or FIREBASE_API_KEY (the latter is explicitly
+// exposed by vite.config.js); the other values use VITE_* keys.
 // No secrets live in source — see frontend/.env.example.
 // Firebase API keys are public identifiers; access is enforced by Firebase
 // Security Rules + backend JWT checks, never by hiding the key.
 const firebaseConfig = {
-  apiKey: import.meta.env.FIREBASE_API_KEY,
+  apiKey:
+    import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
@@ -20,7 +22,16 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const isFirebaseConfigured = Object.values(firebaseConfig).every(Boolean);
+const missingFirebaseKeys = Object.keys(firebaseConfig).filter(
+  (key) => !firebaseConfig[key]
+);
+const isFirebaseConfigured = missingFirebaseKeys.length === 0;
+if (!isFirebaseConfigured) {
+  console.error(
+    "Firebase is not configured. Missing config values:",
+    missingFirebaseKeys.join(", ")
+  );
+}
 const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 export const auth = app ? getAuth(app) : null;
 export const db = app ? getFirestore(app) : null;
